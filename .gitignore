@@ -1,0 +1,4 @@
+.arduino-user/
+build/
+*.log
+.DS_Store

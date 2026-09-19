@@ -8,6 +8,11 @@ CPU, and let the watchdog clean up.
 
 Time: about 2 hours.
 
+Theory behind this lab (concept pages, in Romanian):
+[Taskuri și stări](../concepts/2-scheduling/tasks-and-states.md),
+[Preempțiune cu priorități fixe](../concepts/2-scheduling/fixed-priority-preemption.md),
+[Înfometare și watchdog](../concepts/2-scheduling/starvation-and-watchdogs.md).
+
 Read [../docs/freertos_concepts.md](../docs/freertos_concepts.md) first,
 sections "Tasks and priorities", "Task states" and "The tick".
 

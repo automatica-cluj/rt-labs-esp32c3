@@ -7,6 +7,12 @@ same CPU.
 
 Time: about 2 hours, of which the first 30 minutes are setup.
 
+Theory behind this lab (concept pages, in Romanian):
+[Ce înseamnă timp real](../concepts/00-what-is-real-time.md),
+[Ceasuri și rezoluție](../concepts/1-time/clocks-and-resolution.md),
+[Latență și jitter](../concepts/1-time/latency-and-jitter.md),
+[Eliberare periodică](../concepts/1-time/periodic-release.md).
+
 ---
 
 ## 1. Setup

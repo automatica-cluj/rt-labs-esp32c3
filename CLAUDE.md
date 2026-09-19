@@ -14,7 +14,10 @@ reported over USB CDC serial. The sibling Linux/PREEMPT_RT track lives in
 
 Layout: `labN-topic/README.md` plus sketch folders `labN-topic/<name>/<name>.ino`,
 each holding a **copy** of `common/rtlab.h`. `docs/` has the setup guide, the
-FreeRTOS concepts page and the C primer. `tools/` has the sync, compile,
+FreeRTOS concepts page and the C primer (practical, English). `concepts/` has
+the theory pages (Romanian, theory only), grouped in one folder per lab, plus
+`index.md`, `glossary.md` and `further-reading.md`; each lab README links to
+its pages. `tools/` has the sync, compile,
 hardware-in-the-loop and plot scripts.
 
 ## Build and test
@@ -92,5 +95,15 @@ ARDUINO_DIRECTORIES_USER=$PWD/.arduino-user arduino-cli compile \
   Questions. Plain prose, no emojis. They describe what to look for and
   contain no fabricated numbers. Captured output from a real board may be
   added.
+- `concepts/` holds theory pages for students, in **Romanian**, and they are
+  **theory only**: no code, no API or function names, no sketch names, keys,
+  verdicts or lab instructions, platform-neutral (a concrete value only as a
+  "de exemplu"). Template: Problema, Ideea, Teorie, Exemplu (hand-calculated),
+  Greșeli frecvente, Întrebări de verificare, a "Pentru mai mult" line, and a
+  final "Laborator asociat" link, the only lab reference. 90 to 150 lines,
+  few formulas in `$...$` LaTeX, no proofs, English file names, terminology
+  from `concepts/glossary.md`: add new terms there, and keep `concepts/index.md`
+  and the "Theory behind this lab" links in the lab READMEs in step when a
+  page is added or renamed. To be published later as a static site (MkDocs).
 - When changing a sketch, update its README and the expected verdicts in
   `tools/hil_smoke.py`.

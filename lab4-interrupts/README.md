@@ -9,6 +9,12 @@ missing `portYIELD_FROM_ISR`.
 
 Time: about 2 hours.
 
+Theory behind this lab (concept pages, in Romanian):
+[Întreruperi și latență](../concepts/4-interrupts/interrupts-and-latency.md),
+[Procesare amânată](../concepts/4-interrupts/deferred-processing.md),
+[Secțiuni critice](../concepts/4-interrupts/critical-sections.md),
+[Debouncing](../concepts/4-interrupts/debouncing.md).
+
 Read the "Interrupts" section of
 [../docs/freertos_concepts.md](../docs/freertos_concepts.md) first.
 

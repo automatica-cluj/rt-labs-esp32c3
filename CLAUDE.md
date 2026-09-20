@@ -10,7 +10,7 @@ programmed with the **Arduino core 3.x** (tested 3.3.7). The sketches call the
 FreeRTOS API directly. The equipment is the board and USB only: all timing
 comes from `esp_timer_get_time()`, the cycle counter and hardware timers,
 reported over USB CDC serial. The sibling Linux/PREEMPT_RT track lives in
-`../ssatr-iaisc-icaf-2025-labs-v2`, and its style is followed here.
+`../rt-labs-linux`, and its style is followed here.
 
 Layout: `labN-topic/README.md` plus sketch folders `labN-topic/<name>/<name>.ino`,
 each holding a **copy** of `common/rt.h`. `docs/` has the setup guide, the
@@ -75,7 +75,7 @@ ARDUINO_DIRECTORIES_USER=$PWD/.arduino-user arduino-cli compile \
 
 - Edit `common/rt.h` only, then run `make sync`. Never edit a copy.
 - Sketches are compiled as C++ by Arduino, but the code is written as plain
-  C, to match the Linux track (`../ssatr-iaisc-icaf-2025-labs-v2`, `rt.h`
+  C, to match the Linux track (`../rt-labs-linux`, `rt.h`
   there): no references, default arguments, unnamed parameters, `std::`,
   lambdas, templates or classes. Structs are passed by pointer, types are
   spelled `struct Name`, every helper is prefixed `rt_`. `<stdatomic.h>` does

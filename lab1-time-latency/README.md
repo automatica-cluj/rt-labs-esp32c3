@@ -9,6 +9,7 @@ Time: about 2 hours, of which the first 30 minutes are setup.
 
 Theory behind this lab (concept pages, in Romanian):
 [Ce înseamnă timp real](https://github.com/automatica-cluj/rt-concepts/blob/main/00-what-is-real-time.md),
+[Ce este un sistem de operare de timp real](https://github.com/automatica-cluj/rt-concepts/blob/main/01-what-is-an-rtos.md),
 [Ceasuri și rezoluție](https://github.com/automatica-cluj/rt-concepts/blob/main/1-time/clocks-and-resolution.md),
 [Latență și jitter](https://github.com/automatica-cluj/rt-concepts/blob/main/1-time/latency-and-jitter.md),
 [Eliberare periodică](https://github.com/automatica-cluj/rt-concepts/blob/main/1-time/periodic-release.md).

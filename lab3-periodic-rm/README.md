@@ -9,11 +9,11 @@ first and check the second against what the board actually does.
 Time: about 2 hours.
 
 Theory behind this lab (concept pages, in Romanian):
-[Modelul de task](../concepts/3-analysis/task-model.md),
-[WCET](../concepts/3-analysis/wcet.md),
-[Rate Monotonic](../concepts/3-analysis/rate-monotonic.md),
-[Analiza timpului de răspuns](../concepts/3-analysis/response-time-analysis.md),
-[Supraîncărcare](../concepts/3-analysis/overload.md).
+[Modelul de task](https://github.com/automatica-cluj/rt-concepts/blob/main/3-analysis/task-model.md),
+[WCET](https://github.com/automatica-cluj/rt-concepts/blob/main/3-analysis/wcet.md),
+[Rate Monotonic](https://github.com/automatica-cluj/rt-concepts/blob/main/3-analysis/rate-monotonic.md),
+[Analiza timpului de răspuns](https://github.com/automatica-cluj/rt-concepts/blob/main/3-analysis/response-time-analysis.md),
+[Supraîncărcare](https://github.com/automatica-cluj/rt-concepts/blob/main/3-analysis/overload.md).
 
 ---
 

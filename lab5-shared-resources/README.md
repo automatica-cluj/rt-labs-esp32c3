@@ -9,10 +9,10 @@ happen on the board, then fix it.
 Time: about 2 hours.
 
 Theory behind this lab (concept pages, in Romanian):
-[Condiții de cursă](../concepts/5-shared-resources/race-conditions.md),
-[Excludere mutuală](../concepts/5-shared-resources/mutual-exclusion.md),
-[Inversiunea de prioritate](../concepts/5-shared-resources/priority-inversion.md),
-[Deadlock](../concepts/5-shared-resources/deadlock.md).
+[Condiții de cursă](https://github.com/automatica-cluj/rt-concepts/blob/main/5-shared-resources/race-conditions.md),
+[Excludere mutuală](https://github.com/automatica-cluj/rt-concepts/blob/main/5-shared-resources/mutual-exclusion.md),
+[Inversiunea de prioritate](https://github.com/automatica-cluj/rt-concepts/blob/main/5-shared-resources/priority-inversion.md),
+[Deadlock](https://github.com/automatica-cluj/rt-concepts/blob/main/5-shared-resources/deadlock.md).
 
 Read "Sharing data" in
 [../docs/freertos_concepts.md](../docs/freertos_concepts.md) first.

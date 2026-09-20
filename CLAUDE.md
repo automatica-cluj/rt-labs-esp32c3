@@ -13,7 +13,7 @@ reported over USB CDC serial. The sibling Linux/PREEMPT_RT track lives in
 `../ssatr-iaisc-icaf-2025-labs-v2`, and its style is followed here.
 
 Layout: `labN-topic/README.md` plus sketch folders `labN-topic/<name>/<name>.ino`,
-each holding a **copy** of `common/rtlab.h`. `docs/` has the setup guide, the
+each holding a **copy** of `common/rt.h`. `docs/` has the setup guide, the
 FreeRTOS concepts page and the C primer (practical, English). The theory pages
 (Romanian) are in the separate `../rt-concepts` repository, and each lab README
 links to its pages there. `tools/` has the sync, compile, hardware-in-the-loop
@@ -22,7 +22,7 @@ and plot scripts.
 ## Build and test
 
 ```bash
-make sync                    # copy common/rtlab.h next to every .ino
+make sync                    # copy common/rt.h next to every .ino
 make compile                 # sync, then compile every sketch with --warnings all (no board)
 make hil PORT=/dev/cu.usbmodemXXXX                       # flash every sketch, press its keys, check verdicts
 make hil PORT=/dev/cu.usbmodemXXXX ONLY="race inversion" # only these sketches (folder basenames)
@@ -40,7 +40,7 @@ ARDUINO_DIRECTORIES_USER=$PWD/.arduino-user arduino-cli compile \
 - They set `ARDUINO_DIRECTORIES_USER=.arduino-user`, because the CLI hangs on
   the macOS privacy check when it touches `~/Documents/Arduino`.
 - Warnings from the core's own headers are ignored; warnings in `.ino` or
-  `rtlab.h` fail the build. A stale `rtlab.h` copy fails it too
+  `rt.h` fail the build. A stale `rt.h` copy fails it too
   (`sync_common.sh --check`).
 - `make hil` needs a board and `pyserial`. The full serial output of the run
   goes to `hil_smoke.log`. There are no other tests.
@@ -49,43 +49,48 @@ ARDUINO_DIRECTORIES_USER=$PWD/.arduino-user arduino-cli compile \
 
 ## How the pieces fit
 
-- `common/rtlab.h` is the whole shared library: header-only, `static inline`
-  functions, one global `Timeline g_tl`. It gives clocks (`now_us`, `cycles`),
-  calibrated busy work (`burn_us`, `tl_burn`), `start_task`, `Stats`,
-  the timeline strip, `read_key` and `verdict`. The Arduino IDE only finds
+- `common/rt.h` is the whole shared library: header-only, `static inline`
+  functions, one global `struct rt_timeline g_tl`. It gives clocks (`rt_now_us`, `rt_cycles`),
+  calibrated busy work (`rt_busy_us`, `rt_tl_busy`), `rt_start_task`, `struct rt_stats`,
+  the timeline strip, `rt_read_key` and `verdict`. The Arduino IDE only finds
   headers next to the `.ino`, hence the copies. Both scripts pick sketches up
   with the glob `lab*/*/*.ino`, so a new sketch folder is synced and compiled
   with no further registration.
-- `verdict()` prints `VERDICT: <text>`, and that line is the contract between
+- `rt_verdict()` prints `VERDICT: <text>`, and that line is the contract between
   a sketch, its README and `tools/hil_smoke.py`. For each entry in `CHECKS`
   the harness sends the key, then judges the **first** line that starts with
   `VERDICT:` against a regex. A second or stray verdict line is therefore
   read as the answer to the next key. The harness reopens the port if the
   board resets (the `starvation_wdt` variants that reset on purpose), and
   the key order in `CHECKS` is the order they are run in.
-- `rtlab_begin()` waits up to 3 s for the serial monitor, then calibrates
-  `burn_us()` at priority 20 with interrupts off. The harness sleeps 3.5 s
+- `rt_begin()` waits up to 3 s for the serial monitor, then calibrates
+  `rt_busy_us()` at priority 20 with interrupts off. The harness sleeps 3.5 s
   after opening the port for this reason.
 - A new sketch needs: its folder and `.ino`, `make sync`, a section in the lab
   README, a row entry in the root `README.md` table, and a `CHECKS` entry.
 
 ## Conventions
 
-- Edit `common/rtlab.h` only, then run `make sync`. Never edit a copy.
-- Code stays close to C: no lambdas, templates or classes with methods.
-  References, `const`, structs and one `std::atomic` (Lab 5) are fine, and
-  each is explained in `docs/c_for_these_labs.md`. Keep that page in sync.
+- Edit `common/rt.h` only, then run `make sync`. Never edit a copy.
+- Sketches are compiled as C++ by Arduino, but the code is written as plain
+  C, to match the Linux track (`../ssatr-iaisc-icaf-2025-labs-v2`, `rt.h`
+  there): no references, default arguments, unnamed parameters, `std::`,
+  lambdas, templates or classes. Structs are passed by pointer, types are
+  spelled `struct Name`, every helper is prefixed `rt_`. `<stdatomic.h>` does
+  not compile in Arduino's C++ mode, so Lab 5 uses `__sync_fetch_and_add` on a
+  plain `uint32_t`. `docs/c_for_these_labs.md` explains what students meet;
+  keep that page in sync.
 - **Arduino prototype trap:** the IDE generates function prototypes above
   user type declarations, so functions must not take enums declared in the
   sketch. Use `int` constants. Structs declared before use have worked.
 - Each sketch: header comment listing the keys, a `// ---- EXPERIMENT KNOBS ----`
-  block, `rtlab_begin()` in `setup()`, variants selected by single keys in
+  block, `rt_begin()` in `setup()`, variants selected by single keys in
   `loop()`, and one `VERDICT: ...` line per experiment.
 - Nothing is printed inside timing loops. Tasks record into static arrays and
   `loop()` prints afterwards.
 - Lab task priorities stay within 1–20 (esp_timer 22, Wi-Fi 23). The control
   code in `loop()` raises itself (usually to 10) while it releases tasks.
-- `burn_us()` is iteration-based CPU time, calibrated at start-up with
+- `rt_busy_us()` is iteration-based CPU time, calibrated at start-up with
   interrupts off, so preemption stretches it the way real computation would.
 - Keep `portENTER_CRITICAL` sections far below 300 ms (the interrupt watchdog).
   The task watchdog is 5 s and does not watch the idle task.

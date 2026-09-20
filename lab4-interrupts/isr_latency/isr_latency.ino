@@ -17,7 +17,7 @@
 // Nothing is printed while measuring. The ISR and the handler store numbers in
 // arrays; loop() prints them afterwards.
 
-#include "rtlab.h"
+#include "rt.h"
 
 // ---- EXPERIMENT KNOBS ----
 const int kSamples = 2000;          // 1 ms apart: 2 s per run
@@ -51,7 +51,7 @@ static volatile uint32_t g_merged;        // events that shared a wake-up
 
 static void ARDUINO_ISR_ATTR on_alarm(void) {
     uint32_t counts = (uint32_t)timerRead(g_timer);  // first thing: latency
-    uint32_t c = cycles();
+    uint32_t c = rt_cycles();
     int n = g_isr_n;
     if (n >= kSamples) return;
     g_isr_counts[n] = (uint16_t)counts;
@@ -71,7 +71,7 @@ static void ARDUINO_ISR_ATTR on_noisy(void) {
         vTaskNotifyGiveFromISR(g_worker, &woken);
         portYIELD_FROM_ISR(woken);
     } else {
-        burn_us(kNoisyWorkUs);  // "do the work in the ISR"
+        rt_busy_us(kNoisyWorkUs);  // "do the work in the ISR"
     }
 }
 
@@ -93,37 +93,41 @@ static void record_wakeup(uint32_t pending, uint32_t woke_cycles) {
 }
 
 // The handler: sleep until the ISR notifies us, note the time, "handle".
-static void handler_task(void*) {
+static void handler_task(void* arg) {
+    (void)arg;  // not used
     for (;;) {
         uint32_t pending = ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-        uint32_t c = cycles();
+        uint32_t c = rt_cycles();
         record_wakeup(pending, c);
     }
 }
 
-static void worker_task(void*) {  // variant f: the noisy ISR's deferred work
+static void worker_task(void* arg) {  // variant f: the noisy ISR's deferred work
+    (void)arg;  // not used
     for (;;) {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-        burn_us(kNoisyWorkUs);
+        rt_busy_us(kNoisyWorkUs);
     }
 }
 
-static void busy_task(void*) {  // variant c: computes 3 ms, sleeps 2 ms
+static void busy_task(void* arg) {  // variant c: computes 3 ms, sleeps 2 ms
+    (void)arg;  // not used
     while (!g_stop) {
-        burn_us(3000);
+        rt_busy_us(3000);
         vTaskDelay(pdMS_TO_TICKS(2));
     }
     xSemaphoreGive(g_done);
     vTaskDelete(NULL);
 }
 
-static void critical_task(void*) {  // variant d: interrupts off 200 us at a time
+static void critical_task(void* arg) {  // variant d: interrupts off 200 us at a time
+    (void)arg;  // not used
     static portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
     while (!g_stop) {
         portENTER_CRITICAL(&mux);
-        burn_us(kCriticalUs);
+        rt_busy_us(kCriticalUs);
         portEXIT_CRITICAL(&mux);
-        burn_us(50);
+        rt_busy_us(50);
     }
     xSemaphoreGive(g_done);
     vTaskDelete(NULL);
@@ -131,9 +135,9 @@ static void critical_task(void*) {  // variant d: interrupts off 200 us at a tim
 
 // ---------------------------------------------------------- report --------
 
-static void print_us(const char* what, const Stats& s, int32_t per_us) {
-    Serial.printf("%-22s min %8.1f us, avg %8.1f us, max %8.1f us\n", what, s.min / (float)per_us,
-                  stats_avg(s) / (float)per_us, s.max / (float)per_us);
+static void print_us(const char* what, const struct rt_stats* s, int32_t per_us) {
+    Serial.printf("%-22s min %8.1f us, avg %8.1f us, max %8.1f us\n", what, s->min / (float)per_us,
+                  rt_stats_avg(s) / (float)per_us, s->max / (float)per_us);
 }
 
 static void run(char key) {
@@ -155,17 +159,17 @@ static void run(char key) {
     g_merged = 0;
     g_stop = false;
     int helpers = 0;
-    g_handler = start_task(handler_task, "handler", handler_prio);
+    g_handler = rt_start_task(handler_task, "handler", handler_prio, NULL);
     if (key == 'c') {
-        start_task(busy_task, "busy", 5);
+        rt_start_task(busy_task, "busy", 5, NULL);
         helpers++;
     }
     if (key == 'd') {
-        start_task(critical_task, "critical", 3);
+        rt_start_task(critical_task, "critical", 3, NULL);
         helpers++;
     }
     if (key == 'e' || key == 'f') {
-        if (key == 'f') g_worker = start_task(worker_task, "worker", 5);
+        if (key == 'f') g_worker = rt_start_task(worker_task, "worker", 5, NULL);
         g_noisy = timerBegin(1000000);
         timerAttachInterrupt(g_noisy, on_noisy);
         timerAlarm(g_noisy, kNoisyPeriodUs, true, 0);
@@ -192,20 +196,20 @@ static void run(char key) {
     }
     vTaskPrioritySet(NULL, my_prio);
 
-    Stats isr, task;
-    stats_reset(isr, 10);
-    stats_reset(task, 160);
-    for (int i = 0; i < g_isr_n; i++) stats_add(isr, g_isr_counts[i]);
-    for (int i = 0; i < g_task_n; i++) stats_add(task, (int32_t)g_task_cycles[i]);
+    struct rt_stats isr, task;
+    rt_stats_init(&isr, 10);
+    rt_stats_init(&task, 160);
+    for (int i = 0; i < g_isr_n; i++) rt_stats_add(&isr, g_isr_counts[i]);
+    for (int i = 0; i < g_task_n; i++) rt_stats_add(&task, (int32_t)g_task_cycles[i]);
     Serial.printf("%d interrupts, handler woke %d times (%lu events shared a wake-up)\n", g_isr_n, g_task_n,
                   (unsigned long)g_merged);
-    print_us("interrupt latency", isr, kTimerHz / 1000000);
-    print_us("ISR -> handler task", task, CPU_MHZ);
+    print_us("interrupt latency", &isr, kTimerHz / 1000000);
+    print_us("ISR -> handler task", &task, CPU_MHZ);
 
     char v[64];
     snprintf(v, sizeof(v), "ISR_MAX_US=%.1f TASK_MAX_US=%.1f", isr.max / (float)(kTimerHz / 1000000),
              task.max / (float)CPU_MHZ);
-    verdict(v);
+    rt_verdict(v);
 }
 
 static void menu(void) {
@@ -214,15 +218,15 @@ static void menu(void) {
 }
 
 void setup() {
-    rtlab_begin("lab 4: isr_latency");
+    rt_begin("lab 4: isr_latency");
     g_done = xSemaphoreCreateCounting(2, 0);
 
     // Reading the timer is not free, and its cost is in every number below.
     hw_timer_t* t = timerBegin(kTimerHz);
     timerRead(t);  // once to get it into the cache
-    uint32_t c0 = cycles();
+    uint32_t c0 = rt_cycles();
     volatile uint64_t x = timerRead(t);
-    uint32_t c = cycles() - c0;
+    uint32_t c = rt_cycles() - c0;
     (void)x;
     timerEnd(t);
     Serial.printf("one timerRead() costs %.2f us\n", c / (float)CPU_MHZ);
@@ -230,7 +234,7 @@ void setup() {
 }
 
 void loop() {
-    int k = read_key();
+    int k = rt_read_key();
     if (k >= 'a' && k <= 'f') {
         run((char)k);
         menu();

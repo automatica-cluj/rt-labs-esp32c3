@@ -17,11 +17,11 @@
 
 #include <WiFi.h>
 
-#include "rtlab.h"
+#include "rt.h"
 
 // ---- EXPERIMENT KNOBS ----
 const int kPeriodMs = 10;      // T
-const int kWorkUs = 3000;      // C, burned with burn_us()
+const int kWorkUs = 3000;      // C, burned with rt_busy_us()
 const int kPeriods = 300;      // 3 s per run
 const int kHogWorkUs = 2000;   // the hog computes this long ...
 const int kHogSleepMs = 7;     // ... then sleeps this long
@@ -33,23 +33,25 @@ static volatile bool g_stop;
 static SemaphoreHandle_t g_done;  // every task gives it once when it ends
 static int g_ran = 0;             // samples in g_wake from the last run
 
-static void periodic_task(void*) {
+static void periodic_task(void* arg) {
+    (void)arg;  // not used
     TickType_t last = xTaskGetTickCount();
     for (int k = 0; k < kPeriods; k++) {
         if (g_absolute)
             xTaskDelayUntil(&last, pdMS_TO_TICKS(kPeriodMs));  // wake at last + T
         else
             vTaskDelay(pdMS_TO_TICKS(kPeriodMs));  // wake T after *now*
-        g_wake[k] = now_us();
-        burn_us(kWorkUs);
+        g_wake[k] = rt_now_us();
+        rt_busy_us(kWorkUs);
     }
     xSemaphoreGive(g_done);
     vTaskDelete(NULL);
 }
 
-static void hog_task(void*) {
+static void hog_task(void* arg) {
+    (void)arg;  // not used
     while (!g_stop) {
-        burn_us(kHogWorkUs);
+        rt_busy_us(kHogWorkUs);
         vTaskDelay(pdMS_TO_TICKS(kHogSleepMs));
     }
     xSemaphoreGive(g_done);
@@ -58,7 +60,8 @@ static void hog_task(void*) {
 
 // Scanning makes the radio hop channels and send probe requests. The Wi-Fi
 // driver does that work in its own task at priority 23 and in interrupts.
-static void wifi_task(void*) {
+static void wifi_task(void* arg) {
+    (void)arg;  // not used
     while (!g_stop) WiFi.scanNetworks(false);
     WiFi.mode(WIFI_OFF);
     xSemaphoreGive(g_done);
@@ -76,18 +79,18 @@ static void report(void) {
     for (int k = 1; k < kPeriods; k++)
         if (g_wake[k] - (int64_t)k * T < origin) origin = g_wake[k] - (int64_t)k * T;
 
-    Stats interval, late;
-    stats_reset(interval, 1000);
-    stats_reset(late, 50);
+    struct rt_stats interval, late;
+    rt_stats_init(&interval, 1000);
+    rt_stats_init(&late, 50);
     for (int k = 0; k < kPeriods; k++) {
-        stats_add(late, (int32_t)(g_wake[k] - origin - (int64_t)k * T));
-        if (k > 0) stats_add(interval, (int32_t)(g_wake[k] - g_wake[k - 1]));
+        rt_stats_add(&late, (int32_t)(g_wake[k] - origin - (int64_t)k * T));
+        if (k > 0) rt_stats_add(&interval, (int32_t)(g_wake[k] - g_wake[k - 1]));
     }
 
-    stats_print(interval, "interval between wake-ups", "us");
-    stats_print(late, "lateness", "us");
+    rt_stats_print(&interval, "interval between wake-ups", "us");
+    rt_stats_print(&late, "lateness", "us");
     Serial.println("lateness histogram:");
-    stats_print_hist(late, "us");
+    rt_stats_print_hist(&late, "us");
 
     int64_t took = g_wake[kPeriods - 1] - g_wake[0];
     int64_t should = (int64_t)(kPeriods - 1) * T;
@@ -99,7 +102,7 @@ static void report(void) {
         snprintf(v, sizeof(v), "DRIFT_MS=%ld", (long)((took - should) / 1000));
     else
         snprintf(v, sizeof(v), "JITTER_US=%ld", (long)(late.max - late.min));
-    verdict(v);
+    rt_verdict(v);
 }
 
 static void run(char key) {
@@ -118,17 +121,17 @@ static void run(char key) {
     g_stop = false;
     int helpers = 0;
     if (hog) {
-        start_task(hog_task, "hog", kHogPrio);
+        rt_start_task(hog_task, "hog", kHogPrio, NULL);
         helpers++;
     }
     if (wifi) {
         WiFi.mode(WIFI_STA);
-        start_task(wifi_task, "wifi_load", 1, NULL, 8192);
+        rt_start_task_stack(wifi_task, "wifi_load", 1, NULL, 8192);
         helpers++;
         delay(500);  // let the radio start before measuring
     }
 
-    start_task(periodic_task, "periodic", prio);
+    rt_start_task(periodic_task, "periodic", prio, NULL);
     xSemaphoreTake(g_done, portMAX_DELAY);  // the periodic task is done
     g_stop = true;
     for (int i = 0; i < helpers; i++) xSemaphoreTake(g_done, portMAX_DELAY);
@@ -154,13 +157,13 @@ static void menu(void) {
 }
 
 void setup() {
-    rtlab_begin("lab 1: periodic_jitter");
+    rt_begin("lab 1: periodic_jitter");
     g_done = xSemaphoreCreateCounting(4, 0);
     menu();
 }
 
 void loop() {
-    int k = read_key();
+    int k = rt_read_key();
     if (k >= 'a' && k <= 'e') {
         run((char)k);
         menu();

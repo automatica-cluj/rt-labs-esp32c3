@@ -20,9 +20,9 @@ Theory behind this lab (concept pages, in Romanian):
 Follow [../docs/setup.md](../docs/setup.md) up to and including step 3. When
 `clocks` prints its first lines, you are ready.
 
-Read [../common/rtlab.h](../common/rtlab.h) once. Every sketch includes a copy
-of it: `now_us()`, `cycles()`, `burn_us()`, `Stats`, `start_task()` and
-`verdict()` come from there.
+Read [../common/rt.h](../common/rt.h) once. Every sketch includes a copy
+of it: `rt_now_us()`, `rt_cycles()`, `rt_busy_us()`, `struct rt_stats`, `rt_start_task()` and
+`rt_verdict()` come from there.
 
 ## 2. Clocks: `clocks`
 
@@ -39,8 +39,8 @@ The sketch prints five parts:
 3. **Sleeping.** `delay(1)` and `vTaskDelay(1)` do not mean "1000 µs". Look at
    the minimum. FreeRTOS counts delays in ticks of 1 ms, and "one tick from
    now" can be a few microseconds away if you call it just before a tick.
-4. **Busy waiting.** `delayMicroseconds()` and `burn_us()` both keep the CPU.
-   Compare their accuracy. `burn_us()` is how every later lab models
+4. **Busy waiting.** `delayMicroseconds()` and `rt_busy_us()` both keep the CPU.
+   Compare their accuracy. `rt_busy_us()` is how every later lab models
    "computation time".
 5. **Printing.** The cost of one `Serial.printf`. Compare it with part 2. This
    is why the labs never print inside a timing loop: record into an array,

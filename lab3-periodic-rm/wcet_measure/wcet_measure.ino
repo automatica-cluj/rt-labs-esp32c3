@@ -13,7 +13,7 @@
 // The very first run after reset is reported separately: code and constants
 // that were never used are not in the cache yet.
 
-#include "rtlab.h"
+#include "rt.h"
 
 // ---- EXPERIMENT KNOBS ----
 const int kN = 64;          // elements to sort
@@ -80,14 +80,14 @@ static uint32_t time_one(bool irq_off) {
     uint32_t c0, c;
     if (irq_off) {
         portENTER_CRITICAL(&g_mux);
-        c0 = cycles();
+        c0 = rt_cycles();
         job();
-        c = cycles() - c0;
+        c = rt_cycles() - c0;
         portEXIT_CRITICAL(&g_mux);
     } else {
-        c0 = cycles();
+        c0 = rt_cycles();
         job();
-        c = cycles() - c0;
+        c = rt_cycles() - c0;
     }
     return c;
 }
@@ -100,16 +100,16 @@ static void measure(const char* label, int kind, int n, bool irq_off, bool flush
         g_cyc[r] = time_one(irq_off);
     }
 
-    Stats s;
-    stats_reset(s, 400);  // cycles; 400 cycles = 2.5 us per bucket
-    for (int r = 0; r < n; r++) stats_add(s, (int32_t)g_cyc[r]);
+    struct rt_stats s;
+    rt_stats_init(&s, 400);  // cycles; 400 cycles = 2.5 us per bucket
+    for (int r = 0; r < n; r++) rt_stats_add(&s, (int32_t)g_cyc[r]);
     Serial.printf("%-9s %5d runs: min %7.2f us, avg %7.2f us, max %7.2f us, max/avg %.2f\n", label, n,
-                  s.min / (float)CPU_MHZ, stats_avg(s) / (float)CPU_MHZ, s.max / (float)CPU_MHZ,
-                  s.max / (float)stats_avg(s));
-    if (verdict_out) sprintf(verdict_out, "WCET_US=%.1f AVG_US=%.1f", s.max / (float)CPU_MHZ, stats_avg(s) / (float)CPU_MHZ);
+                  s.min / (float)CPU_MHZ, rt_stats_avg(&s) / (float)CPU_MHZ, s.max / (float)CPU_MHZ,
+                  s.max / (float)rt_stats_avg(&s));
+    if (verdict_out) sprintf(verdict_out, "WCET_US=%.1f AVG_US=%.1f", s.max / (float)CPU_MHZ, rt_stats_avg(&s) / (float)CPU_MHZ);
     if (n == kRuns) {
         Serial.println("histogram (cycles):");
-        stats_print_hist(s, "cyc");
+        rt_stats_print_hist(&s, "cyc");
     }
 }
 
@@ -124,7 +124,7 @@ static void run(char key) {
         measure("reverse", kReverse, 500, true, false, v);
     }
     if (key == 'd') measure("cold", kRandom, kRuns, true, true, v);
-    verdict(v);
+    rt_verdict(v);
 }
 
 static void menu(void) {
@@ -132,7 +132,7 @@ static void menu(void) {
 }
 
 void setup() {
-    rtlab_begin("lab 3: wcet_measure");
+    rt_begin("lab 3: wcet_measure");
     // Measure at priority 5, above everything else the core starts except
     // the esp_timer and Wi-Fi tasks (loop() itself normally runs at 1).
     vTaskPrioritySet(NULL, 5);
@@ -147,7 +147,7 @@ void setup() {
 }
 
 void loop() {
-    int k = read_key();
+    int k = rt_read_key();
     if (k >= 'a' && k <= 'd') {
         run((char)k);
         menu();

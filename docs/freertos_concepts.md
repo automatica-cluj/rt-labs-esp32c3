@@ -15,7 +15,7 @@ resume. You create one with
 xTaskCreate(function, "name", stack_bytes, argument, priority, &handle);
 ```
 
-`start_task()` in `rtlab.h` wraps this and stops the sketch if it fails.
+`rt_start_task()` in `rt.h` wraps this and stops the sketch if it fails.
 
 Priorities are numbers from 0 to 24. **A higher number means a higher
 priority.** The scheduler follows one rule: *the highest-priority task that is
@@ -92,7 +92,7 @@ and wakes a task, and the task does the work at a priority you choose.
 | **Counting semaphore** | counting events or free slots | |
 | **Task notification** `xTaskNotifyGive` / `ulTaskNotifyTake` | waking one particular task, often from an ISR | the fastest option; no object to create |
 | **Queue** `xQueueSend` / `xQueueReceive` | passing data by copy between tasks | the receiver owns its copy; no lock needed |
-| `std::atomic` | a single counter or flag | the C3 has no atomic instructions, so the compiler briefly disables interrupts instead |
+| an atomic add (`__sync_fetch_and_add`) | a single counter or flag | the C3 has no atomic instructions, so the compiler briefly disables interrupts instead |
 
 ## Linux PREEMPT_RT equivalents
 

@@ -67,7 +67,7 @@ everything you have seen in A–D that changes it.
 ## 3. A task set: `rm_taskset`
 
 Upload `rm_taskset/rm_taskset.ino`. Three periodic tasks, `sensor`, `control`
-and `logger`, each computing C ms (with `burn_us`) every T ms. All three are
+and `logger`, each computing C ms (with `rt_busy_us`) every T ms. All three are
 released together at t0 (the *critical instant*, the worst case for fixed
 priorities) and run for 2.1 s. For each task set the sketch prints:
 

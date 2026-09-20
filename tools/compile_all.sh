@@ -20,8 +20,8 @@ for ino in lab*/*/*.ino; do
     printf '%-45s ' "$dir"
     if out=$("$CLI" compile --fqbn "$FQBN" --warnings all "$dir" 2>&1); then
         # The core's own headers warn; only our files have to be clean.
-        if echo "$out" | grep -qE '(\.ino|rtlab\.h):[0-9]+:[0-9]+: warning'; then
-            echo "WARNINGS"; echo "$out" | grep -E -A3 '(\.ino|rtlab\.h):[0-9]+:[0-9]+: warning'; fail=1
+        if echo "$out" | grep -qE '(\.ino|rt\.h):[0-9]+:[0-9]+: warning'; then
+            echo "WARNINGS"; echo "$out" | grep -E -A3 '(\.ino|rt\.h):[0-9]+:[0-9]+: warning'; fail=1
         else
             echo "$out" | grep -o 'Sketch uses [0-9]* bytes ([0-9]*%)' || echo ok
         fi

@@ -126,7 +126,7 @@ def main():
                 continue
             time.sleep(2.0)
             ser = open_port(args.port, time.time() + 15)
-            time.sleep(3.5)  # rtlab_begin() waits up to 3 s for the monitor
+            time.sleep(3.5)  # rt_begin() waits up to 3 s for the monitor
             for key, pattern, seconds in checks:
                 if key:
                     ser.reset_input_buffer()

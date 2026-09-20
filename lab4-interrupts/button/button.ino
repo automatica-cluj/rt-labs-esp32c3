@@ -16,7 +16,7 @@
 // Do not hold BOOT while pressing RESET or plugging in: that starts the
 // bootloader instead of this sketch.
 
-#include "rtlab.h"
+#include "rt.h"
 
 // ---- EXPERIMENT KNOBS ----
 const uint32_t kSettleMs = 20;  // how long the contact must be quiet
@@ -32,7 +32,7 @@ static volatile uint32_t g_releases = 0;
 static TaskHandle_t g_debounce = NULL;
 
 static void ARDUINO_ISR_ATTR on_edge(void) {
-    uint32_t c = cycles();
+    uint32_t c = rt_cycles();
     if (g_edges > 0 && c - g_last_edge_cyc < g_min_gap_cyc) g_min_gap_cyc = c - g_last_edge_cyc;
     g_last_edge_cyc = c;
     g_edges = g_edges + 1;
@@ -42,7 +42,8 @@ static void ARDUINO_ISR_ATTR on_edge(void) {
     portYIELD_FROM_ISR(woken);
 }
 
-static void debounce_task(void*) {
+static void debounce_task(void* arg) {
+    (void)arg;  // not used
     int stable = digitalRead(BOOT_PIN);  // HIGH = released
     bool led_on = false;
     for (;;) {
@@ -77,9 +78,9 @@ void setup() {
     pinMode(LED_PIN, OUTPUT);
     digitalWrite(LED_PIN, HIGH);  // off
     pinMode(BOOT_PIN, INPUT_PULLUP);
-    rtlab_begin("lab 4: button");
+    rt_begin("lab 4: button");
 
-    g_debounce = start_task(debounce_task, "debounce", 5);
+    g_debounce = rt_start_task(debounce_task, "debounce", 5, NULL);
     attachInterrupt(BOOT_PIN, on_edge, CHANGE);
     Serial.println("press the BOOT button; keys: r reset counters | v verdict");
 }
@@ -89,14 +90,14 @@ void loop() {
     // Print only when something changed, and only after the button has been
     // quiet for a moment, so printing never competes with an ongoing bounce.
     if ((g_edges != shown_edges || g_presses != shown_presses || g_releases != shown_releases) &&
-        cycles() - g_last_edge_cyc > 100u * 1000 * CPU_MHZ) {
+        rt_cycles() - g_last_edge_cyc > 100u * 1000 * CPU_MHZ) {
         shown_edges = g_edges;
         shown_presses = g_presses;
         shown_releases = g_releases;
         print_counters();
     }
 
-    int k = read_key();
+    int k = rt_read_key();
     if (k == 'r') {
         noInterrupts();
         g_edges = 0;
@@ -109,7 +110,7 @@ void loop() {
     } else if (k == 'v') {
         char v[64];
         snprintf(v, sizeof(v), "EDGES=%lu PRESSES=%lu", (unsigned long)g_edges, (unsigned long)g_presses);
-        verdict(v);
+        rt_verdict(v);
     }
     delay(10);
 }

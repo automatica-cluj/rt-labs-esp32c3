@@ -43,9 +43,9 @@ why. Is the code correct now? What would break it again?
 
 ### Experiment C — three fixes
 
-Press `c` (mutex), `d` (critical section) and `e` (`std::atomic`). All three
+Press `c` (mutex), `d` (critical section) and `e` (an atomic add). All three
 give 2 000 000. Compare how long each takes. The C3 has no atomic
-instructions, so `fetch_add` briefly disables interrupts. Which fix would you
+instructions, so the atomic add briefly disables interrupts. Which fix would you
 use for a counter that an ISR also increments, and why can the mutex not be
 used there?
 

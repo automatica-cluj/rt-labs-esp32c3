@@ -25,13 +25,13 @@ static void worker_task(void* arg) {
 }
 ```
 
-`arg` is whatever pointer you passed to `start_task()`. The labs pass a
+`arg` is whatever pointer you passed to `rt_start_task()`. The labs pass a
 pointer to a struct (`Worker* w = (Worker*)arg;`) or to a global variable
 (`char letter = *(char*)arg;`). A task that needs no argument is written
 `static void hog_task(void*)`: C++ lets you leave out the name of a parameter
 you do not use, and the compiler then does not warn about it.
 
-`start_task(fn, "name", prio)` is `xTaskCreate` with a check. Its last two
+`rt_start_task(fn, "name", prio)` is `xTaskCreate` with a check. Its last two
 parameters, `arg` and `stack`, have **default values** (`NULL` and 4096), so
 you only write them when you need them.
 
@@ -43,12 +43,19 @@ you only write them when you need them.
 constants. The block marked `// ---- EXPERIMENT KNOBS ----` at the top of each
 sketch holds the values you are invited to change.
 
-**References: `Stats& s`.** Another name for an existing variable. A parameter
-`Stats& s` behaves like `Stats* s` in C, but you write `s.min` instead of
-`s->min`, and it can never be null.
+**`struct rt_stats s; rt_stats_init(&s, 50);`** Structs are plain C structs
+with helper functions next to them. A helper that changes a struct receives
+its **address** (`&s`), and inside the helper the fields are reached with
+`->`: `s->min` means "the `min` field of the struct that `s` points to".
+A task receives its data the same way: `struct Worker* w = (struct Worker*)arg;`
+turns the `void*` given to `rt_start_task()` back into a pointer to your struct.
 
-**`Stats s; stats_reset(s, 50);`** Structs are plain C structs with helper
-functions next to them, not classes with methods.
+**`(void)arg;  // not used`** at the top of a task that needs no argument. It
+only tells the compiler that ignoring `arg` is intended, so it does not warn.
+
+**Names that start with `rt_`** come from `rt.h`, the helper header. The Linux
+lab track has a header with the same name and the same ideas
+(`rt_stats_add`, `rt_start_...`), so what you learn here carries over.
 
 **`portMUX_TYPE mux` and `portENTER_CRITICAL(&mux)`.** A critical section:
 interrupts are off until `portEXIT_CRITICAL(&mux)`, so nothing can preempt
@@ -58,16 +65,17 @@ chips. On the one-core C3 it is only a required argument.
 **`__attribute__((noinline))`, `__asm__ volatile("")`, `volatile ... sink`.**
 An optimising compiler deletes code whose result nobody uses, and a
 measurement loop looks exactly like that. These three tell the compiler to
-leave the code alone. You will meet them only in `burn_us()` and in the
+leave the code alone. You will meet them only in `rt_busy_us()` and in the
 measuring code of labs 1 and 3.
 
 **`volatile`** tells the compiler that a variable can change behind its back,
 in an ISR or another task, so it must really read it every time. It does
 **not** make `x = x + 1` safe between tasks: Lab 5 shows exactly that.
 
-**`std::atomic<uint32_t> counter;`** A variable whose operations cannot be
-interrupted halfway: `counter.fetch_add(1)` is one indivisible step. Used once,
-in Lab 5.
+**`__sync_fetch_and_add(&counter, 1);`** An atomic add: read, add and write
+back as one step that cannot be interrupted halfway. It is a compiler built-in
+that works on an ordinary `uint32_t`. Used once, in Lab 5. (Plain C offers the
+same through `<stdatomic.h>`, which the Arduino build does not accept.)
 
 **`printf` formats.** `Serial.printf` works like C's `printf`. Integer types
 differ between platforms, so values are cast before printing:
@@ -75,7 +83,7 @@ differ between platforms, so values are cast before printing:
 `%lld`.
 
 **`uint32_t`, `int64_t`** are integers of an exact width. Time in microseconds
-since boot is `int64_t` (`now_us()`), because 32 bits of microseconds run out
+since boot is `int64_t` (`rt_now_us()`), because 32 bits of microseconds run out
 after 71 minutes. The cycle counter is `uint32_t` and wraps every 26.8 s;
 subtracting two readings still works across one wrap.
 

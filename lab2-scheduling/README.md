@@ -22,7 +22,7 @@ sections "Tasks and priorities", "Task states" and "The tick".
 
 Upload `scheduling/scheduling.ino`.
 
-- Every **worker task** burns CPU time with `tl_burn()`. While it does, it
+- Every **worker task** burns CPU time with `rt_tl_busy()`. While it does, it
   writes its letter into a **timeline**: one character per slice of time
   (5 ms or 1 ms).
 - `loop()` is the control code. While it releases workers it raises itself to

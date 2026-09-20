@@ -37,8 +37,8 @@ under `// ---- EXPERIMENT KNOBS ----`.
 
 ## How the sketches are built
 
-- `common/rtlab.h` is a short header with the shared helpers: clocks
-  (`now_us`, `cycles`), calibrated busy work (`burn_us`), task creation,
+- `common/rt.h` is a short header with the shared helpers: clocks
+  (`rt_now_us`, `rt_cycles`), calibrated busy work (`rt_busy_us`), task creation,
   statistics, a timeline strip, and the `VERDICT:` line. Every sketch folder
   holds a copy of it, because the Arduino IDE only finds headers next to the
   `.ino`. Read it once in Lab 1.
@@ -51,7 +51,7 @@ under `// ---- EXPERIMENT KNOBS ----`.
 ## For maintainers
 
 ```
-make sync                  # copy common/rtlab.h into every sketch folder
+make sync                  # copy common/rt.h into every sketch folder
 make compile               # compile all sketches, warnings on (no board needed)
 make hil PORT=/dev/...     # flash each sketch, press its keys, check each VERDICT
 ```

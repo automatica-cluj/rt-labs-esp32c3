@@ -11,7 +11,7 @@
 //   d  no pause between the takes, 200 rounds each, 50 ms timeout: count how
 //      often the deadlock happens when it depends on timing alone.
 
-#include "rtlab.h"
+#include "rt.h"
 
 // ---- EXPERIMENT KNOBS ----
 const UBaseType_t kPrio = 3;  // A and B have the same priority
@@ -31,17 +31,17 @@ struct Worker {
 
 static SemaphoreHandle_t g_m1, g_m2;
 static SemaphoreHandle_t g_done;
-static Worker g_a, g_b;
+static struct Worker g_a, g_b;
 
 static void worker_task(void* arg) {
-    Worker* w = (Worker*)arg;
+    struct Worker* w = (struct Worker*)arg;
     while (w->done_rounds < w->rounds) {
         if (xSemaphoreTake(w->first, w->timeout) != pdTRUE) {
             w->timeouts++;
             continue;
         }
         if (w->pause_ms) vTaskDelay(pdMS_TO_TICKS(w->pause_ms));
-        else burn_us(random(0, 500));
+        else rt_busy_us(random(0, 500));
         if (xSemaphoreTake(w->second, w->timeout) != pdTRUE) {
             // Detected: we hold one and cannot get the other. Back off.
             w->timeouts++;
@@ -49,7 +49,7 @@ static void worker_task(void* arg) {
             vTaskDelay(pdMS_TO_TICKS(random(1, 30)));
             continue;
         }
-        burn_us(1000);  // work with both resources
+        rt_busy_us(1000);  // work with both resources
         xSemaphoreGive(w->second);
         xSemaphoreGive(w->first);
         w->done_rounds++;
@@ -58,16 +58,16 @@ static void worker_task(void* arg) {
     vTaskSuspend(NULL);  // loop() deletes us
 }
 
-static void setup_worker(Worker& w, char name, SemaphoreHandle_t first, SemaphoreHandle_t second,
+static void setup_worker(struct Worker* w, char name, SemaphoreHandle_t first, SemaphoreHandle_t second,
                          TickType_t timeout, uint32_t pause_ms, int rounds) {
-    w.name = name;
-    w.first = first;
-    w.second = second;
-    w.timeout = timeout;
-    w.pause_ms = pause_ms;
-    w.rounds = rounds;
-    w.done_rounds = 0;
-    w.timeouts = 0;
+    w->name = name;
+    w->first = first;
+    w->second = second;
+    w->timeout = timeout;
+    w->pause_ms = pause_ms;
+    w->rounds = rounds;
+    w->done_rounds = 0;
+    w->timeouts = 0;
 }
 
 static const char* holder_name(SemaphoreHandle_t m) {
@@ -90,28 +90,28 @@ static void run(char key) {
     g_m2 = xSemaphoreCreateMutex();
     TickType_t forever = portMAX_DELAY;
     if (key == 'a') {
-        setup_worker(g_a, 'A', g_m1, g_m2, forever, 20, 1);
-        setup_worker(g_b, 'B', g_m2, g_m1, forever, 20, 1);
+        setup_worker(&g_a, 'A', g_m1, g_m2, forever, 20, 1);
+        setup_worker(&g_b, 'B', g_m2, g_m1, forever, 20, 1);
     } else if (key == 'b') {
-        setup_worker(g_a, 'A', g_m1, g_m2, pdMS_TO_TICKS(100), 20, 1);
-        setup_worker(g_b, 'B', g_m2, g_m1, pdMS_TO_TICKS(100), 20, 1);
+        setup_worker(&g_a, 'A', g_m1, g_m2, pdMS_TO_TICKS(100), 20, 1);
+        setup_worker(&g_b, 'B', g_m2, g_m1, pdMS_TO_TICKS(100), 20, 1);
     } else if (key == 'c') {
-        setup_worker(g_a, 'A', g_m1, g_m2, forever, 20, 1);
-        setup_worker(g_b, 'B', g_m1, g_m2, forever, 20, 1);
+        setup_worker(&g_a, 'A', g_m1, g_m2, forever, 20, 1);
+        setup_worker(&g_b, 'B', g_m1, g_m2, forever, 20, 1);
     } else {
-        setup_worker(g_a, 'A', g_m1, g_m2, pdMS_TO_TICKS(50), 0, 200);
-        setup_worker(g_b, 'B', g_m2, g_m1, pdMS_TO_TICKS(50), 0, 200);
+        setup_worker(&g_a, 'A', g_m1, g_m2, pdMS_TO_TICKS(50), 0, 200);
+        setup_worker(&g_b, 'B', g_m2, g_m1, pdMS_TO_TICKS(50), 0, 200);
     }
     Serial.printf("\n--- variant %c ---\n", key);
 
-    int64_t t0 = now_us();
-    g_a.handle = start_task(worker_task, "A", kPrio, &g_a);
-    g_b.handle = start_task(worker_task, "B", kPrio, &g_b);
+    int64_t t0 = rt_now_us();
+    g_a.handle = rt_start_task(worker_task, "A", kPrio, &g_a);
+    g_b.handle = rt_start_task(worker_task, "B", kPrio, &g_b);
 
     // Wait for both, but not forever: that is the deadlock detector.
     int finished = 0;
     while (finished < 2 && xSemaphoreTake(g_done, pdMS_TO_TICKS(key == 'd' ? 30000 : 1000)) == pdTRUE) finished++;
-    float took = (now_us() - t0) / 1000.0f;
+    float took = (rt_now_us() - t0) / 1000.0f;
 
     if (finished < 2) {
         Serial.println("after 1 s not both tasks have finished. Who holds what:");
@@ -128,7 +128,7 @@ static void run(char key) {
     if (finished < 2) snprintf(v, sizeof(v), "DEADLOCK");
     else if (g_a.timeouts + g_b.timeouts > 0) snprintf(v, sizeof(v), "RECOVERED timeouts=%d", g_a.timeouts + g_b.timeouts);
     else snprintf(v, sizeof(v), "NO_DEADLOCK");
-    verdict(v);
+    rt_verdict(v);
 
     // Clean up. A deadlocked task can only be removed from outside.
     vTaskDelete(g_a.handle);
@@ -142,13 +142,13 @@ static void menu(void) {
 }
 
 void setup() {
-    rtlab_begin("lab 5: deadlock");
+    rt_begin("lab 5: deadlock");
     g_done = xSemaphoreCreateCounting(2, 0);
     menu();
 }
 
 void loop() {
-    int k = read_key();
+    int k = rt_read_key();
     if (k >= 'a' && k <= 'd') {
         run((char)k);
         menu();

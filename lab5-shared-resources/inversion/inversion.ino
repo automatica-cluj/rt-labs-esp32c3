@@ -19,7 +19,7 @@
 //
 // "blocked" is the time from H asking for the lock until H getting it.
 
-#include "rtlab.h"
+#include "rt.h"
 
 // ---- EXPERIMENT KNOBS ----
 const uint32_t kCsMs = 40;       // L's critical section
@@ -33,10 +33,11 @@ static float g_h_request_ms, g_h_got_ms;
 static UBaseType_t g_l_max_prio;  // highest priority L ran at inside the lock
 static char g_letter_m = 'M', g_letter_n = 'N';  // timeline letters of the medium tasks
 
-static void low_task(void*) {
+static void low_task(void* arg) {
+    (void)arg;  // not used
     xSemaphoreTake(g_lock, portMAX_DELAY);
     for (uint32_t ms = 0; ms < kCsMs; ms++) {
-        tl_burn(1000, 'L');
+        rt_tl_busy(1000, 'L');
         UBaseType_t p = uxTaskPriorityGet(NULL);
         if (p > g_l_max_prio) g_l_max_prio = p;
     }
@@ -47,23 +48,24 @@ static void low_task(void*) {
 
 static void medium_task(void* arg) {
     char letter = *(char*)arg;  // arg points to g_letter_m or g_letter_n
-    tl_burn(kMediumMs * 1000, letter);
+    rt_tl_busy(kMediumMs * 1000, letter);
     xSemaphoreGive(g_done);
     vTaskDelete(NULL);
 }
 
-static void high_task(void*) {
-    g_h_request_ms = tl_ms();
+static void high_task(void* arg) {
+    (void)arg;  // not used
+    g_h_request_ms = rt_tl_ms();
     xSemaphoreTake(g_lock, portMAX_DELAY);
-    g_h_got_ms = tl_ms();
-    tl_burn(kHighMs * 1000, 'H');
+    g_h_got_ms = rt_tl_ms();
+    rt_tl_busy(kHighMs * 1000, 'H');
     xSemaphoreGive(g_lock);
     xSemaphoreGive(g_done);
     vTaskDelete(NULL);
 }
 
 static void wait_until_ms(int ms) {
-    int32_t left = ms - (int32_t)tl_ms();
+    int32_t left = ms - (int32_t)rt_tl_ms();
     if (left > 0) vTaskDelay(pdMS_TO_TICKS(left));
 }
 
@@ -83,27 +85,27 @@ static void run(char key) {
 
     UBaseType_t my_prio = uxTaskPriorityGet(NULL);
     vTaskPrioritySet(NULL, 10);  // releases happen on time
-    tl_start(5000, 80);
-    start_task(low_task, "L", kPrioL);
+    rt_tl_start(5000, 80);
+    rt_start_task(low_task, "L", kPrioL, NULL);
     wait_until_ms(10);
-    start_task(high_task, "H", kPrioH);
+    rt_start_task(high_task, "H", kPrioH, NULL);
     wait_until_ms(20);
-    start_task(medium_task, "M", kPrioM, &g_letter_m);
+    rt_start_task(medium_task, "M", kPrioM, &g_letter_m);
     if (two) {
         wait_until_ms(25);
-        start_task(medium_task, "N", kPrioN, &g_letter_n);
+        rt_start_task(medium_task, "N", kPrioN, &g_letter_n);
     }
     for (int i = 0; i < (two ? 4 : 3); i++) xSemaphoreTake(g_done, portMAX_DELAY);
     vTaskPrioritySet(NULL, my_prio);
     vSemaphoreDelete(g_lock);
 
-    tl_print(80);
+    rt_tl_print(80);
     float blocked = g_h_got_ms - g_h_request_ms;
     Serial.printf("H asked for the lock at %.1f ms and got it at %.1f ms: blocked %.1f ms\n", g_h_request_ms,
                   g_h_got_ms, blocked);
     Serial.printf("L's critical section is %lu ms; L ran at priority up to %u while holding the lock\n",
                   (unsigned long)kCsMs, (unsigned)g_l_max_prio);
-    verdict(blocked <= kCsMs + 1 ? "BOUNDED" : "UNBOUNDED");
+    rt_verdict(blocked <= kCsMs + 1 ? "BOUNDED" : "UNBOUNDED");
 }
 
 static void menu(void) {
@@ -111,13 +113,13 @@ static void menu(void) {
 }
 
 void setup() {
-    rtlab_begin("lab 5: inversion");
+    rt_begin("lab 5: inversion");
     g_done = xSemaphoreCreateCounting(4, 0);
     menu();
 }
 
 void loop() {
-    int k = read_key();
+    int k = rt_read_key();
     if (k >= 'a' && k <= 'd') {
         run((char)k);
         menu();

@@ -19,7 +19,7 @@
 // running at the time. That survives the reset in RTC memory.
 
 #include "esp_task_wdt.h"
-#include "rtlab.h"
+#include "rt.h"
 
 // ---- EXPERIMENT KNOBS ----
 const uint32_t kWdtTimeoutMs = 3000;
@@ -53,13 +53,14 @@ static const char* reason_name(esp_reset_reason_t r) {
     }
 }
 
-static void hog_task(void*) {
+static void hog_task(void* arg) {
+    (void)arg;  // not used
     char v = g_running;  // the variant, set by start_hog()
     uint32_t total_ms = (v == 'a') ? 1000 : 6000;
     if (v == 'd') esp_task_wdt_add(NULL);  // "I am alive, watch me"
 
     for (uint32_t ms = 0; ms < total_ms; ms += 10) {
-        burn_us(10000);
+        rt_busy_us(10000);
         if (v == 'c') vTaskDelay(1);         // give the CPU away for one tick
         if (v == 'd') esp_task_wdt_reset();  // feed the watchdog
     }
@@ -80,8 +81,8 @@ static void start_hog(char v) {
     g_variant = v;
     g_running = v;
     g_max_gap_us = 0;
-    g_last_loop_us = now_us();
-    start_task(hog_task, "hog", kHogPrio);
+    g_last_loop_us = rt_now_us();
+    rt_start_task(hog_task, "hog", kHogPrio, NULL);
 }
 
 static void menu(void) {
@@ -99,13 +100,13 @@ static void reset_report(void) {
         char v[64];
         snprintf(v, sizeof(v), "RESET_DURING_%c reason=%s", g_reset_during,
                  g_reason == ESP_RST_TASK_WDT ? "TASK_WDT" : "OTHER");
-        verdict(v);
+        rt_verdict(v);
     }
 }
 
 void setup() {
     pinMode(LED_PIN, OUTPUT);
-    rtlab_begin("lab 2: starvation_wdt");
+    rt_begin("lab 2: starvation_wdt");
 
     // After power-on, RTC memory holds random bits, so the marker means
     // nothing.
@@ -129,7 +130,7 @@ void setup() {
 }
 
 void loop() {
-    int64_t t = now_us();
+    int64_t t = rt_now_us();
     if (g_running && t - g_last_loop_us > g_max_gap_us) g_max_gap_us = t - g_last_loop_us;
     g_last_loop_us = t;
 
@@ -139,13 +140,13 @@ void loop() {
         Serial.printf("hog finished; longest gap between two loop() runs: %.1f ms\n", g_max_gap_us / 1000.0);
         char v[48];
         snprintf(v, sizeof(v), "NO_RESET max_loop_gap_ms=%ld", (long)(g_max_gap_us / 1000));
-        verdict(v);
+        rt_verdict(v);
         g_running = 0;
         g_marker = 0;
         menu();
     }
 
-    int k = read_key();
+    int k = rt_read_key();
     if (!g_running && k >= 'a' && k <= 'd') start_hog((char)k);
     if (!g_running && k == 'i') reset_report();
     delay(5);

@@ -15,7 +15,7 @@
 // In the timeline strip each column is a slice of time and the letter is the
 // task that was running in it.
 
-#include "rtlab.h"
+#include "rt.h"
 
 // ---- EXPERIMENT KNOBS ----
 const UBaseType_t kControlPrio = 10;  // above every worker
@@ -26,46 +26,46 @@ struct Worker {
     uint32_t work_us;   // total computation
     int jobs;           // 1 = one-shot; more = periodic
     int period_ms;      // for periodic workers
-    float release_ms, start_ms, finish_ms;  // measured, from tl_start()
+    float release_ms, start_ms, finish_ms;  // measured, from rt_tl_start()
 };
 
-static Worker g_w[3];
+static struct Worker g_w[3];
 static int g_nw;
 static SemaphoreHandle_t g_done;
 static char g_snapshot[1200];
 
 static void worker_task(void* arg) {
-    Worker* w = (Worker*)arg;
-    w->start_ms = tl_ms();
+    struct Worker* w = (struct Worker*)arg;
+    w->start_ms = rt_tl_ms();
     TickType_t last = xTaskGetTickCount();
     for (int j = 0; j < w->jobs; j++) {
         if (j > 0) xTaskDelayUntil(&last, pdMS_TO_TICKS(w->period_ms));
-        tl_burn(w->work_us, w->letter);
+        rt_tl_busy(w->work_us, w->letter);
     }
-    w->finish_ms = tl_ms();
+    w->finish_ms = rt_tl_ms();
     xSemaphoreGive(g_done);
     vTaskDelete(NULL);
 }
 
 static void add_worker(char letter, UBaseType_t prio, uint32_t work_ms, int jobs, int period_ms) {
-    Worker& w = g_w[g_nw++];
-    w.letter = letter;
-    w.prio = prio;
-    w.work_us = work_ms * 1000;
-    w.jobs = jobs;
-    w.period_ms = period_ms;
+    struct Worker* w = &g_w[g_nw++];
+    w->letter = letter;
+    w->prio = prio;
+    w->work_us = work_ms * 1000;
+    w->jobs = jobs;
+    w->period_ms = period_ms;
 }
 
-static void release(Worker& w) {
-    char name[2] = {w.letter, 0};
-    w.release_ms = tl_ms();
-    start_task(worker_task, name, w.prio, &w);
+static void release(struct Worker* w) {
+    char name[2] = {w->letter, 0};
+    w->release_ms = rt_tl_ms();
+    rt_start_task(worker_task, name, w->prio, w);
 }
 
-// Sleep until `ms` after tl_start(). The control code has the highest
+// Sleep until `ms` after rt_tl_start(). The control code has the highest
 // priority, so it wakes on time and releases the next worker on time.
 static void wait_until_ms(int ms) {
-    int32_t left = ms - (int32_t)tl_ms();
+    int32_t left = ms - (int32_t)rt_tl_ms();
     if (left > 0) vTaskDelay(pdMS_TO_TICKS(left));
 }
 
@@ -117,10 +117,10 @@ static void run(char key) {
 
     UBaseType_t my_prio = uxTaskPriorityGet(NULL);
     vTaskPrioritySet(NULL, kControlPrio);
-    tl_start(slice_us, columns);
+    rt_tl_start(slice_us, columns);
     for (int i = 0; i < g_nw; i++) {
         wait_until_ms(release_at[i]);
-        release(g_w[i]);
+        release(&g_w[i]);
     }
     if (key == 'd') {
         wait_until_ms(60);
@@ -129,12 +129,12 @@ static void run(char key) {
     for (int i = 0; i < g_nw; i++) xSemaphoreTake(g_done, portMAX_DELAY);
     vTaskPrioritySet(NULL, my_prio);
 
-    tl_print(100);
+    rt_tl_print(100);
     Serial.println("task  prio  release   start  finish  response (ms)");
     for (int i = 0; i < g_nw; i++) {
-        Worker& w = g_w[i];
-        Serial.printf("  %c   %4u  %7.1f %7.1f %7.1f  %8.1f\n", w.letter, (unsigned)w.prio, w.release_ms,
-                      w.start_ms, w.finish_ms, w.finish_ms - w.release_ms);
+        struct Worker* w = &g_w[i];
+        Serial.printf("  %c   %4u  %7.1f %7.1f %7.1f  %8.1f\n", w->letter, (unsigned)w->prio, w->release_ms,
+                      w->start_ms, w->finish_ms, w->finish_ms - w->release_ms);
     }
     if (key == 'd') {
         Serial.println("\nsnapshot at 60 ms (X running, R ready, B blocked, S suspended, D deleted)");
@@ -146,7 +146,7 @@ static void run(char key) {
     finish_order(order);
     char v[32];
     snprintf(v, sizeof(v), "FINISH_ORDER=%s", order);
-    verdict(v);
+    rt_verdict(v);
 }
 
 static void menu(void) {
@@ -154,13 +154,13 @@ static void menu(void) {
 }
 
 void setup() {
-    rtlab_begin("lab 2: scheduling");
+    rt_begin("lab 2: scheduling");
     g_done = xSemaphoreCreateCounting(3, 0);
     menu();
 }
 
 void loop() {
-    int k = read_key();
+    int k = rt_read_key();
     if (k >= 'a' && k <= 'd') {
         run((char)k);
         menu();

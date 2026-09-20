@@ -1,6 +1,6 @@
 # Maintainer targets. Students use the Arduino IDE and do not need this file.
 #
-#   make sync                 copy common/rtlab.h into every sketch folder
+#   make sync                 copy common/rt.h into every sketch folder
 #   make compile              compile every sketch (no board needed)
 #   make hil PORT=/dev/...    flash every sketch to a board and check its verdicts
 #   make hil PORT=... ONLY="race inversion"

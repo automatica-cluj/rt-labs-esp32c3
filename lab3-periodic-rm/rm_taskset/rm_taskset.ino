@@ -54,13 +54,10 @@ static SemaphoreHandle_t g_done;
 static int64_t release_us(const struct Task* t, int64_t k) { return g_t0_us + k * (int64_t)t->s.T_ms * 1000; }
 
 // Sleep until job k is released. If that moment has already passed, this
-// returns at once. xTaskDelayUntil(&prev, T) means "wake me at prev + T", so
-// prev is set to one period before the release.
+// returns at once, which is what makes the overrun policies below work.
 static void sleep_until_release(const struct Task* t, int64_t k) {
     TickType_t T_ticks = pdMS_TO_TICKS(t->s.T_ms);
-    TickType_t release_tick = g_t0_tick + (TickType_t)k * T_ticks;
-    TickType_t prev = release_tick - T_ticks;
-    xTaskDelayUntil(&prev, T_ticks);
+    rt_sleep_until_tick(g_t0_tick + (TickType_t)k * T_ticks);
 }
 
 // This is the whole periodic task: wait for the release, compute, note the
@@ -167,8 +164,7 @@ static void run(char key) {
     g_stop = false;
     g_t0_tick = xTaskGetTickCount() + pdMS_TO_TICKS(20);
     for (int i = 0; i < n; i++) rt_start_task(periodic_task, g_task[i].s.name, g_task[i].s.prio, &g_task[i]);
-    TickType_t prev = g_t0_tick - 1;
-    xTaskDelayUntil(&prev, 1);  // wake at t0, before the tasks (higher priority)
+    rt_sleep_until_tick(g_t0_tick);  // wake at t0, before the tasks (higher priority)
     g_t0_us = rt_now_us();
     vTaskDelay(pdMS_TO_TICKS(kRunMs));
     g_stop = true;

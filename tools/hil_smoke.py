@@ -27,7 +27,9 @@ FQBN = os.environ.get("FQBN", "esp32:esp32:esp32c3:CDCOnBoot=cdc")
 # sketch -> list of (key to send, regex the VERDICT line must match, seconds to wait).
 # key None = no key, the verdict comes by itself after reset.
 CHECKS = {
-    "lab1-time-latency/clocks": [(None, r"CLOCKS_DONE", 20)],
+    # clocks runs once by itself after reset, usually before the port is open
+    # here, so press 'r' to run it again and judge that run.
+    "lab1-time-latency/clocks": [("r", r"CLOCKS_DONE", 30)],
     "lab1-time-latency/periodic_jitter": [
         ("a", r"DRIFT_MS=\d+", 10), ("b", r"JITTER_US=\d+", 10), ("c", r"JITTER_US=\d+", 10),
         ("d", r"JITTER_US=\d+", 10), ("e", r"JITTER_US=\d+", 20)],

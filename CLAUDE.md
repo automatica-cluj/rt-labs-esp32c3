@@ -42,7 +42,9 @@ ARDUINO_DIRECTORIES_USER=$PWD/.arduino-user arduino-cli compile \
 - Warnings from the core's own headers are ignored; warnings in `.ino` or
   `rt.h` fail the build. A stale `rt.h` copy fails it too
   (`sync_common.sh --check`).
-- `make hil` needs a board and `pyserial`. The full serial output of the run
+- `make hil` needs a board and `pyserial` (a virtual environment is fine:
+  `python3 -m venv .venv && .venv/bin/pip install pyserial`, then run
+  `.venv/bin/python tools/hil_smoke.py --port ...`). The full serial output of the run
   goes to `hil_smoke.log`. There are no other tests.
 - `tools/plot_serial.py run.log [out.png]` (needs matplotlib) plots the
   `csv: k,...` / `csv: end` block that `periodic_jitter` prints on key `p`.
@@ -50,7 +52,7 @@ ARDUINO_DIRECTORIES_USER=$PWD/.arduino-user arduino-cli compile \
 ## How the pieces fit
 
 - `common/rt.h` is the whole shared library: header-only, `static inline`
-  functions, one global `struct rt_timeline g_tl`. It gives clocks (`rt_now_us`, `rt_cycles`),
+  functions, one global `struct rt_timeline g_tl`. It gives clocks (`rt_now_us`, `rt_cycles`), the absolute sleep `rt_sleep_until_tick`,
   calibrated busy work (`rt_busy_us`, `rt_tl_busy`), `rt_start_task`, `struct rt_stats`,
   the timeline strip, `rt_read_key` and `verdict`. The Arduino IDE only finds
   headers next to the `.ino`, hence the copies. Both scripts pick sketches up
@@ -92,6 +94,12 @@ ARDUINO_DIRECTORIES_USER=$PWD/.arduino-user arduino-cli compile \
   code in `loop()` raises itself (usually to 10) while it releases tasks.
 - `rt_busy_us()` is iteration-based CPU time, calibrated at start-up with
   interrupts off, so preemption stretches it the way real computation would.
+- **`xTaskDelayUntil` trap:** its `prev` argument must be a tick in the past.
+  A `prev` later than now is read as a wrapped tick counter and the call
+  returns at once. To sleep until an absolute tick use `rt_sleep_until_tick()`.
+  This bug made `rm_taskset` starve two of its three tasks until it was run on
+  a board, so run `make hil` after changing timing code; `make compile` cannot
+  catch this kind of error.
 - Keep `portENTER_CRITICAL` sections far below 300 ms (the interrupt watchdog).
   The task watchdog is 5 s and does not watch the idle task.
   `starvation_wdt` shortens it to 3 s and adds `loopTask` on purpose.

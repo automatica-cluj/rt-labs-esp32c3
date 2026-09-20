@@ -9,6 +9,7 @@
 //   rt_begin()         open USB serial, calibrate rt_busy_us(), print a banner
 //   rt_cycles()        CPU cycle counter, 160 per microsecond
 //   rt_now_us()        microseconds since boot (esp_timer)
+//   rt_sleep_until_tick()  absolute sleep, the basis of periodic tasks
 //   rt_busy_us()       spend N microseconds of CPU time: the "computation"
 //   rt_start_task()    xTaskCreate that stops the sketch if it fails
 //   struct rt_stats    min / avg / max and a histogram of integer samples
@@ -47,6 +48,19 @@
 static inline uint32_t rt_cycles(void) { return esp_cpu_get_cycle_count(); }
 static inline uint32_t rt_cycles_to_us(uint32_t c) { return c / CPU_MHZ; }
 static inline int64_t rt_now_us(void) { return esp_timer_get_time(); }
+
+// Sleep until the tick counter reaches `tick`. Returns at once if that moment
+// has already passed. This is an absolute sleep: the wake-up time does not
+// depend on when we call it, so a periodic task built on it does not drift.
+//
+// xTaskDelayUntil(&prev, n) means "wake me at prev + n", and it requires
+// prev to be in the past. So prev is "now" and n is the distance to `tick`.
+static inline void rt_sleep_until_tick(TickType_t tick) {
+    TickType_t now = xTaskGetTickCount();
+    if ((int32_t)(tick - now) <= 0) return;  // already passed
+    TickType_t prev = now;
+    xTaskDelayUntil(&prev, tick - now);
+}
 
 // --------------------------------------------------------- busy work ------
 

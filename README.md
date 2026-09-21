@@ -61,7 +61,3 @@ IDE on macOS, with FQBN `esp32:esp32:esp32c3:CDCOnBoot=cdc`. It was tested
 with arduino-esp32 3.3.7. `make hil` needs `pyserial` and a board. Its
 expected verdicts live in `tools/hil_smoke.py`, and they are the behaviour the
 READMEs promise. Keep the two in sync.
-
-The READMEs describe what to look for instead of showing captured output.
-When you run the labs on real boards, consider adding a short captured
-sample to each experiment.

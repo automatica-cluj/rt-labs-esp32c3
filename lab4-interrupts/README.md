@@ -45,7 +45,7 @@ of every interrupt latency number, so subtract it in your head.
 
 ## 2. Experiments
 
-### Experiment A — the baseline
+### Experiment A — the baseline (key `a`)
 
 Press `a`. The handler has priority 10, and the ISR calls
 `portYIELD_FROM_ISR` so the handler runs as soon as the ISR returns.
@@ -55,7 +55,7 @@ can do. The minimum interrupt latency is several microseconds, not
 nanoseconds. Read `on_alarm()`: what has to happen between the hardware alarm
 and its first line?
 
-### Experiment B — forgetting `portYIELD_FROM_ISR`
+### Experiment B — forgetting `portYIELD_FROM_ISR` (key `b`)
 
 Press `b`. The ISR wakes the handler but does not ask for a context switch.
 
@@ -63,7 +63,7 @@ The interrupt latency is unchanged, but the ISR-to-task latency has become
 huge and spread out. What is its maximum close to, and why? When does the
 handler finally run?
 
-### Experiment C — the handler's priority
+### Experiment C — the handler's priority (key `c`)
 
 Press `c`. The handler now has priority 2. A busy task at priority 5 computes
 3 ms and sleeps 2 ms, over and over.
@@ -73,7 +73,7 @@ wake-up" counts interrupts whose handler was so late that the next interrupt
 had already arrived. What happened to the work for those events? How would you
 choose the handler's priority in a real system?
 
-### Experiment D — critical sections
+### Experiment D — critical sections (key `d`)
 
 Press `d`. The handler is back at priority 10. A task at priority 3 keeps
 entering a critical section (`portENTER_CRITICAL`, interrupts off) for 200 µs
@@ -84,7 +84,7 @@ A task with priority 3 just delayed an interrupt and, through it, a task
 with priority 10. Why can the priority not protect against this? What does
 this mean for how long a critical section may be?
 
-### Experiment E — a long ISR somewhere else
+### Experiment E — a long ISR somewhere else (key `e`)
 
 Press `e`. A second timer fires every 3.7 ms, and its ISR "does the work"
 right there: 300 µs of computation.
@@ -94,7 +94,7 @@ level, and an interrupt cannot interrupt another one of the same level. So
 when our alarm arrives during the other ISR, ours waits until the other
 finishes. The damage is not limited to the code that has the long ISR.
 
-### Experiment F — defer the work
+### Experiment F — defer the work (key `f`)
 
 Press `f`. Same second timer, but its ISR now only notifies a worker task at
 priority 5, and the worker does the 300 µs of work.

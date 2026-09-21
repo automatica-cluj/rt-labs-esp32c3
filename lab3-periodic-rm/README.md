@@ -36,26 +36,26 @@ numbers followed by a moving average. It is timed with the CPU cycle counter.
 Right after reset the sketch prints the time of the **first** run and the
 **second** run of the job. Note both.
 
-### Experiment A — 1000 runs, interrupts on
+### Experiment A — 1000 runs, interrupts on (key `a`)
 
 Press `a`. Note min, avg and max, and the histogram. The max is noticeably
 larger than the average, and only a few runs are responsible. What could
 happen during those few runs that does not happen during the others?
 
-### Experiment B — interrupts off
+### Experiment B — interrupts off (key `b`)
 
 Press `b`. Each run is now measured with interrupts off
 (`portENTER_CRITICAL`). Compare the max with A. What did A's max really
 measure? Which of the two numbers belongs in a schedulability analysis, and
 why is the answer "neither, on its own"?
 
-### Experiment C — input matters
+### Experiment C — input matters (key `c`)
 
 Press `c`. The same job on already-sorted, random and reverse-sorted input.
 Which input is the worst case for insertion sort, and why? Would random
 testing have found it?
 
-### Experiment D — a cold cache
+### Experiment D — a cold cache (key `d`)
 
 Press `d`. Before every run, the sketch reads a 64 KB table from flash. That
 pushes the job's code and data out of the 16 KB cache, so they have to come
@@ -93,7 +93,7 @@ against the sketch.
 | `d` | same as b | 0.85 | reversed: logger highest |
 | `e` | same as c | 1.03 | RM, late jobs run late |
 
-### Experiment E — below the bound, above the bound
+### Experiment E — below the bound, above the bound (keys `a`, `b`)
 
 Press `a`, then `b`. Set b is above the Liu & Layland bound. Is it
 schedulable? What does RTA say, and what did the board do? What does "the
@@ -102,19 +102,19 @@ bound is sufficient, not necessary" mean in terms of this result?
 Compare the measured R max with RTA for each task. The measurement is a little
 higher. Where does the difference come from?
 
-### Experiment F — overload
+### Experiment F — overload (key `c`)
 
 Press `c`. U > 1, so something must miss. Which task? Why is it that one and
 not the others? This is one of the most useful properties of fixed-priority
 scheduling. Put it in one sentence.
 
-### Experiment G — the wrong priorities
+### Experiment G — the wrong priorities (key `d`)
 
 Press `d`: set b again, U = 0.85, but the logger (the longest period) now has
 the highest priority. Which task misses now, and why? What does this tell you
 about choosing priorities by "importance"?
 
-### Experiment H — overrun policy
+### Experiment H — overrun policy (key `e`)
 
 Press `e`: the overload of c, but a job that is late is still run, as soon as
 possible (catch-up), instead of being skipped. `xTaskDelayUntil` does exactly

@@ -39,7 +39,7 @@ the hardware.
 
 ## 2. Experiments
 
-### Experiment A — preemption
+### Experiment A — preemption (key `a`)
 
 Press `a`. L (priority 2) is released at 0 ms, M (3) at 40 ms, H (4) at
 80 ms, and each computes 100 ms.
@@ -48,7 +48,7 @@ Before you look: draw the timeline you expect on paper, and predict each
 response time. Then compare. The response time of L is not 100 ms. Why not,
 and what does it consist of?
 
-### Experiment B — equal priorities
+### Experiment B — equal priorities (key `b`)
 
 Press `b`. A, B and C all have priority 3, are released together and compute
 40 ms each. The strip has 1 ms columns.
@@ -58,7 +58,7 @@ long is each turn? Why do all three finish at nearly the same time, much later
 than 40 ms? Compare with running them one after the other: which is better for
 the *average* response time, and which for the first one to finish?
 
-### Experiment C — a periodic task and a long one
+### Experiment C — a periodic task and a long one (key `c`)
 
 Press `c`. H (priority 4) computes 4 ms every 20 ms, eight times. L
 (priority 2) computes 120 ms in one piece.
@@ -67,7 +67,7 @@ Find H's jobs in the strip. What is H's response time for each job? What is
 L's response time, and how can you compute it from H's parameters? (This is
 the idea behind response-time analysis in Lab 3.)
 
-### Experiment D — who else is running?
+### Experiment D — who else is running? (key `d`)
 
 Press `d`. Same as A, plus a snapshot of every task on the chip taken at
 60 ms, printed with `vTaskList()`.
@@ -90,7 +90,7 @@ come round for 3 s, the watchdog resets the chip.
 
 Keys start a **hog** task at priority 5 that computes without blocking.
 
-### Experiment E — starved, but not dead
+### Experiment E — starved, but not dead (keys `a`, `c`, `b`, `d`)
 
 1. Press `a`. The hog computes for 1 s. Watch the LED. When the hog ends, the
    sketch prints the longest gap between two `loop()` runs.

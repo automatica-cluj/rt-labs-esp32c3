@@ -64,14 +64,14 @@ wake-up time in every period. After 300 periods it prints:
 
 Keys `a` to `e` select the variant, and `p` prints the last run as CSV.
 
-### Experiment A — relative sleep
+### Experiment A — relative sleep (key `a`)
 
 Press `a`. The task sleeps with `vTaskDelay(10)` *after* its work.
 
 Look at the interval and the drift. Explain the interval from T and C. What
 would a clock that "ticks" with this task show after one hour?
 
-### Experiment B — absolute sleep
+### Experiment B — absolute sleep (key `b`)
 
 Press `b`. The task uses `xTaskDelayUntil(&last, 10)`: "wake me at
 `last + 10`", measured from the previous *release*, not from *now*.
@@ -79,7 +79,7 @@ Press `b`. The task uses `xTaskDelayUntil(&last, 10)`: "wake me at
 The drift should be gone and the jitter small. Where does the remaining jitter
 come from? (Hint: what else runs every millisecond?)
 
-### Experiment C — a higher-priority task in the way
+### Experiment C — a higher-priority task in the way (key `c`)
 
 Press `c`. A "hog" task at priority 10 computes 2 ms, sleeps 7 ms, forever.
 Its period is not a multiple of 10 ms, so sometimes it is running exactly when
@@ -88,12 +88,12 @@ our task should wake up.
 Compare the lateness histogram with B. What is the largest lateness you would
 expect from the hog's parameters? Does the measurement agree?
 
-### Experiment D — raise our priority
+### Experiment D — raise our priority (key `d`)
 
 Press `d`. Same hog, but our task now has priority 15. What changed, and what
 happened to the hog? Could the hog now miss *its* deadlines?
 
-### Experiment E — the radio
+### Experiment E — the radio (key `e`)
 
 Press `e`. No hog. Instead the Wi-Fi radio scans for networks. The Wi-Fi driver
 runs as a task with priority 23 and in interrupts, both above any task you

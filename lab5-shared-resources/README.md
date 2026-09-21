@@ -29,19 +29,19 @@ If the scheduler switches to the other task between the load and the store,
 the first task later stores a stale value, and everything the other task
 added in the meantime is gone.
 
-### Experiment A — the race
+### Experiment A — the race (key `a`)
 
 Press `a`: both tasks at priority 3, no protection. Run it three times. How
 many updates are lost, and is the number the same each time? Why is a single
 lost update so expensive here? (Hint: how long does a task run before the
 tick switches to the other one?)
 
-### Experiment B — the race that hides
+### Experiment B — the race that hides (key `b`)
 
 Press `b`: the same code, but priorities 3 and 4. Nothing is lost. Explain
 why. Is the code correct now? What would break it again?
 
-### Experiment C — three fixes
+### Experiment C — three fixes (keys `c`, `d`, `e`)
 
 Press `c` (mutex), `d` (critical section) and `e` (an atomic add). All three
 give 2 000 000. Compare how long each takes. The C3 has no atomic
@@ -64,19 +64,19 @@ when it got it, the highest priority L ran at while holding the lock, and a
 verdict: **BOUNDED** if H waited no longer than L's critical section, and
 **UNBOUNDED** otherwise.
 
-### Experiment D — binary semaphore
+### Experiment D — binary semaphore (key `a`)
 
 Press `a`. The lock is a binary semaphore. Read the timeline: who runs from
 20 ms on? How long was H blocked? H has the highest priority on the chip, yet
 it waited for M, which has nothing to do with the lock.
 
-### Experiment E — mutex with priority inheritance
+### Experiment E — mutex with priority inheritance (key `b`)
 
 Press `b`. The lock is now a FreeRTOS mutex. Read the timeline again. What
 priority did L run at while holding the lock? When did H get the lock? Where
 did M's 150 ms go?
 
-### Experiment F — more medium tasks
+### Experiment F — more medium tasks (keys `c`, `d`)
 
 Press `c` (binary semaphore) and `d` (mutex). A second medium task N
 (priority 4) arrives at 25 ms. How does H's blocking time change with the
@@ -94,7 +94,7 @@ Mars, was to switch on priority inheritance for that lock.
 Upload `deadlock/deadlock.ino`. Task A takes m1 then m2; task B takes m2 then
 m1. Both have priority 3.
 
-### Experiment G — watch it happen
+### Experiment G — watch it happen (key `a`)
 
 Press `a`. Both tasks wait forever (`portMAX_DELAY`), with 20 ms between their
 two takes. After 1 s the sketch gives up and shows who holds which mutex and
@@ -102,19 +102,19 @@ what state each task is in. Draw the wait-for graph. Which of the four
 Coffman conditions (mutual exclusion, hold and wait, no preemption, circular
 wait) can you see in the output?
 
-### Experiment H — detect and recover
+### Experiment H — detect and recover (key `b`)
 
 Press `b`. Every take now gives up after 100 ms. A task that times out gives
 back what it holds, waits a random 1–30 ms, and tries again. Both finish. How
 many timeouts were there? Why the *random* wait? What goes wrong if both back
 off for exactly the same time?
 
-### Experiment I — prevent it
+### Experiment I — prevent it (key `c`)
 
 Press `c`. B now takes m1 before m2, the same order as A. Which Coffman
 condition is gone? Why is this usually the preferred fix?
 
-### Experiment J — the rare deadlock
+### Experiment J — the rare deadlock (key `d`)
 
 Press `d`. No pause between the two takes anymore, 200 rounds per task, 50 ms
 timeout. Now the deadlock only happens when a task switch falls exactly

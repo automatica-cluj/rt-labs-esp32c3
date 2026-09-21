@@ -103,7 +103,8 @@ ARDUINO_DIRECTORIES_USER=$PWD/.arduino-user arduino-cli compile \
 - Keep `portENTER_CRITICAL` sections far below 300 ms (the interrupt watchdog).
   The task watchdog is 5 s and does not watch the idle task.
   `starvation_wdt` shortens it to 3 s and adds `loopTask` on purpose.
-- READMEs: goal and time, numbered sections, lettered experiments (no
+- READMEs: goal and time, numbered sections, lettered experiments with the
+  sketch key(s) in the heading, as in ``Experiment F — overload (key `c`)`` (no
   separate Questions section for now). Plain prose, no emojis. They describe what to look for and
   contain no fabricated numbers. Captured output from a real board may be
   added.

@@ -84,8 +84,10 @@ bytes. Which task came closest to running out?
 
 The snapshot itself took time: `loopTask` ran at priority 10 while it
 collected it. The strip cannot show that, because a column is 5 ms wide.
-Compare the table with the one from A instead. Which times moved, which did
-not, and by how much? That is how long the snapshot took.
+Compare the response times with the ones from A instead (not the finish
+times: a release can land up to 1 ms earlier or later, on a different tick).
+Which response times grew, which did not, and by how much? That is how long
+the snapshot took.
 
 ## 3. Starvation and the watchdog: `starvation_wdt`
 

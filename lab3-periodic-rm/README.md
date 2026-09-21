@@ -33,14 +33,22 @@ Theory behind this lab (concept pages, in Romanian):
 Upload `wcet_measure/wcet_measure.ino`. The "job" is an insertion sort of 64
 numbers followed by a moving average. It is timed with the CPU cycle counter.
 
+Experiments A, B and D sort the **same** input in every run: 64 random
+numbers, made once at start-up (with a fixed seed, so every board gets the
+same ones). The input therefore cannot be what makes one run slower than
+another. Experiment C is about the input.
+
 Right after reset the sketch prints the time of the **first** run and the
-**second** run of the job. Note both.
+**second** run of the job, on that same input. Note both.
 
 ### Experiment A — 1000 runs, interrupts on (key `a`)
 
-Press `a`. Note min, avg and max, and the histogram. The max is noticeably
-larger than the average, and only a few runs are responsible. What could
-happen during those few runs that does not happen during the others?
+Press `a`. Note min, avg and max. The histogram shows how many cycles each
+run took above the fastest run (160 cycles = 1 µs). The max is larger than the
+average, and only a few runs are responsible. What could happen during those
+few runs that does not happen during the others? What fraction of the runs
+are slow, and can you explain that fraction from the job's length and the
+1 ms tick?
 
 ### Experiment B — interrupts off (key `b`)
 
@@ -52,14 +60,17 @@ why is the answer "neither, on its own"?
 ### Experiment C — input matters (key `c`)
 
 Press `c`. The same job on already-sorted, random and reverse-sorted input.
-Which input is the worst case for insertion sort, and why? Would random
-testing have found it?
+Here "random" is a new random input in every run. Which input is the worst
+case for insertion sort, and why? Would random testing have found it? Compare
+the spread of the random row with B.
 
 ### Experiment D — a cold cache (key `d`)
 
 Press `d`. Before every run, the sketch reads a 64 KB table from flash. That
-pushes the job's code and data out of the 16 KB cache, so they have to come
-from flash again. Compare with B and with the "first run" printed at reset.
+pushes the job's code out of the 16 KB cache, so it has to come from flash
+again. (The cache only holds what lives in flash: code and constants. The
+arrays the job sorts are in RAM and are not cached.) Compare with B and with
+the "first run" printed at reset.
 
 The WCET of a piece of code is not a property of the code alone. List
 everything you have seen in A–D that changes it.

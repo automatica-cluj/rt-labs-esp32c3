@@ -45,8 +45,10 @@ Press `a`. L (priority 2) is released at 0 ms, M (3) at 40 ms, H (4) at
 80 ms, and each computes 100 ms.
 
 Before you look: draw the timeline you expect on paper, and predict each
-response time. Then compare. The response time of L is not 100 ms. Why not,
-and what does it consist of?
+response time. Then compare. The measured times come out a few percent longer
+than your prediction: the tick interrupt takes a little CPU time every
+millisecond, and marking the strip costs a clock reading every 100 µs. The
+response time of L is not 100 ms. Why not, and what does it consist of?
 
 ### Experiment B — equal priorities (key `b`)
 
@@ -63,7 +65,9 @@ the *average* response time, and which for the first one to finish?
 Press `c`. H (priority 4) computes 4 ms every 20 ms, eight times. L
 (priority 2) computes 120 ms in one piece.
 
-Find H's jobs in the strip. What is H's response time for each job? What is
+Find H's jobs in the strip. What is H's response time for each job? (The
+table gives no response time for H: it has eight, one per job, and the strip
+shows them.) What is
 L's response time, and how can you compute it from H's parameters? (This is
 the idea behind response-time analysis in Lab 3.)
 
@@ -78,8 +82,10 @@ priority. Why is `loopTask` shown as running? Why is L ready and not blocked?
 The "stack" column is the smallest amount of stack that has ever been free, in
 bytes. Which task came closest to running out?
 
-The snapshot itself took time. Look for the gap it left in the strip around
-60 ms.
+The snapshot itself took time: `loopTask` ran at priority 10 while it
+collected it. The strip cannot show that, because a column is 5 ms wide.
+Compare the table with the one from A instead. Which times moved, which did
+not, and by how much? That is how long the snapshot took.
 
 ## 3. Starvation and the watchdog: `starvation_wdt`
 
@@ -98,9 +104,10 @@ Keys start a **hog** task at priority 5 that computes without blocking.
    work. What is the longest gap now? Why does a 1 ms pause make such a
    difference to a task at priority 1?
 3. Press `b`. The hog computes for 6 s without pausing. After about 3 s the
-   board resets. The USB port disappears and comes back. Press `i` in the
-   serial monitor (reconnect it if needed) to see the reset reason and the
-   variant that was running.
+   watchdog fires. It prints which task failed to check in, then a register
+   dump and a long block of stack memory (you can ignore both), and resets
+   the chip. The sketch starts again and prints the reset reason and the
+   variant that was running. Press `i` to print that report again.
 4. Press `d`. The hog now registers itself with the watchdog and feeds it
    diligently while it computes. Does that save the board? Why not? What does
    the watchdog actually watch?

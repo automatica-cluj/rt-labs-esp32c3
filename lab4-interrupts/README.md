@@ -25,7 +25,8 @@ Read the "Interrupts" section of
 Upload `isr_latency/isr_latency.ino`.
 
 A hardware timer counts at 10 MHz (0.1 µs per count) and raises an alarm
-every 1 ms. At the alarm it restarts from 0. So the counter value the ISR
+every 0.997 ms, just under 1 ms (experiment B shows why). At the alarm it
+restarts from 0. So the counter value the ISR
 reads as its very first action is the time from the alarm to the ISR: the
 **interrupt latency**, measured by the hardware itself and needing no wire or
 oscilloscope.
@@ -58,10 +59,20 @@ and its first line?
 ### Experiment B — forgetting `portYIELD_FROM_ISR` (key `b`)
 
 Press `b`. The ISR wakes the handler but does not ask for a context switch.
+A background task at priority 1 computes all the time, as some task in a real
+system usually does, so the interrupt always stops that task.
 
 The interrupt latency is unchanged, but the ISR-to-task latency has become
 huge and spread out. What is its maximum close to, and why? When does the
 handler finally run?
+
+Two details make this visible. Without the background task the CPU would be
+idle, and the idle task gives the CPU to the woken handler within a few
+microseconds, so forgetting the yield would go unnoticed on the bench and
+bite later. And the alarm period is 0.997 ms rather than 1 ms, so that the
+alarm meets the 1 ms tick at every possible point. With exactly 1 ms, every
+alarm would come at the same point between two ticks, and every latency
+would be the same number. A few events may share a wake-up here. Why?
 
 ### Experiment C — the handler's priority (key `c`)
 

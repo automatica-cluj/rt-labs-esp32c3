@@ -21,10 +21,13 @@
 // ---- EXPERIMENT KNOBS ----
 const uint32_t kSettleMs = 20;  // how long the contact must be quiet
 
-// Written by the ISR
+// Written by the ISR. Times are rt_now_us() cut to 32 bits (wraps after 71
+// minutes; differences stay correct), because the ISR writes them in one go
+// and loop() reads them in one go. The cycle counter would not do here: it
+// stops while the CPU sleeps, and between two edges it usually does.
 static volatile uint32_t g_edges = 0;
-static volatile uint32_t g_last_edge_cyc = 0;
-static volatile uint32_t g_min_gap_cyc = 0xFFFFFFFFu;  // shortest time between two edges
+static volatile uint32_t g_last_edge_us = 0;
+static volatile uint32_t g_min_gap_us = 0xFFFFFFFFu;  // shortest time between two edges
 // Written by the debounce task
 static volatile uint32_t g_presses = 0;
 static volatile uint32_t g_releases = 0;
@@ -32,9 +35,9 @@ static volatile uint32_t g_releases = 0;
 static TaskHandle_t g_debounce = NULL;
 
 static void ARDUINO_ISR_ATTR on_edge(void) {
-    uint32_t c = rt_cycles();
-    if (g_edges > 0 && c - g_last_edge_cyc < g_min_gap_cyc) g_min_gap_cyc = c - g_last_edge_cyc;
-    g_last_edge_cyc = c;
+    uint32_t t = (uint32_t)rt_now_us();
+    if (g_edges > 0 && t - g_last_edge_us < g_min_gap_us) g_min_gap_us = t - g_last_edge_us;
+    g_last_edge_us = t;
     g_edges = g_edges + 1;
 
     BaseType_t woken = pdFALSE;
@@ -69,8 +72,8 @@ static void print_counters(void) {
                   "shortest gap between edges %s",
                   (unsigned long)g_edges, (unsigned long)g_presses, (unsigned long)g_releases,
                   (g_presses + g_releases) ? g_edges / (float)(g_presses + g_releases) : 0.0f,
-                  g_min_gap_cyc == 0xFFFFFFFFu ? "-" : "");
-    if (g_min_gap_cyc != 0xFFFFFFFFu) Serial.printf("%.1f us", g_min_gap_cyc / (float)CPU_MHZ);
+                  g_min_gap_us == 0xFFFFFFFFu ? "-" : "");
+    if (g_min_gap_us != 0xFFFFFFFFu) Serial.printf("%lu us", (unsigned long)g_min_gap_us);
     Serial.println();
 }
 
@@ -90,7 +93,7 @@ void loop() {
     // Print only when something changed, and only after the button has been
     // quiet for a moment, so printing never competes with an ongoing bounce.
     if ((g_edges != shown_edges || g_presses != shown_presses || g_releases != shown_releases) &&
-        rt_cycles() - g_last_edge_cyc > 100u * 1000 * CPU_MHZ) {
+        (uint32_t)rt_now_us() - g_last_edge_us > 100u * 1000) {
         shown_edges = g_edges;
         shown_presses = g_presses;
         shown_releases = g_releases;
@@ -103,7 +106,7 @@ void loop() {
         g_edges = 0;
         g_presses = 0;
         g_releases = 0;
-        g_min_gap_cyc = 0xFFFFFFFFu;
+        g_min_gap_us = 0xFFFFFFFFu;
         interrupts();
         shown_edges = shown_presses = shown_releases = 0;
         Serial.println("counters reset");

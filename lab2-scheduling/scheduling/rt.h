@@ -7,7 +7,7 @@
 // Read it once; every function is one idea:
 //
 //   rt_begin()         open USB serial, calibrate rt_busy_us(), print a banner
-//   rt_cycles()        CPU cycle counter, 160 per microsecond
+//   rt_cycles()        CPU cycle counter, 160 per microsecond (stops while the CPU sleeps)
 //   rt_now_us()        microseconds since boot (esp_timer)
 //   rt_sleep_until_tick()  absolute sleep, the basis of periodic tasks
 //   rt_busy_us()       spend N microseconds of CPU time: the "computation"
@@ -45,6 +45,9 @@
 
 // The cycle counter is 32 bits wide and wraps every 26.8 s. The difference of
 // two readings, computed in uint32_t, is still correct across one wrap.
+// It counts only while the CPU runs: when no task is ready, the idle task puts
+// the CPU to sleep until the next interrupt, and the counter stops. Use it for
+// code that keeps the CPU busy; use rt_now_us() for anything that may sleep.
 static inline uint32_t rt_cycles(void) { return esp_cpu_get_cycle_count(); }
 static inline uint32_t rt_cycles_to_us(uint32_t c) { return c / CPU_MHZ; }
 static inline int64_t rt_now_us(void) { return esp_timer_get_time(); }

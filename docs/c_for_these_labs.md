@@ -84,7 +84,8 @@ differ between platforms, so values are cast before printing:
 **`uint32_t`, `int64_t`** are integers of an exact width. Time in microseconds
 since boot is `int64_t` (`rt_now_us()`), because 32 bits of microseconds run out
 after 71 minutes. The cycle counter is `uint32_t` and wraps every 26.8 s;
-subtracting two readings still works across one wrap.
+subtracting two readings still works across one wrap. (It also stops while the
+CPU sleeps, so the labs use it only to time code that keeps the CPU busy.)
 
 **`ARDUINO_ISR_ATTR`** in front of an ISR puts it where it is safe to run as
 an interrupt handler. Every ISR in the labs has it.

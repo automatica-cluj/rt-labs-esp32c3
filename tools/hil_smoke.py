@@ -53,7 +53,9 @@ CHECKS = {
         ("a", r"\bUNBOUNDED", 5), ("b", r"\bBOUNDED", 5), ("c", r"\bUNBOUNDED", 5), ("d", r"\bBOUNDED", 5)],
     "lab5-shared-resources/deadlock": [
         ("a", r"DEADLOCK$", 5), ("b", r"RECOVERED", 5), ("c", r"NO_DEADLOCK", 5),
-        ("d", r"RECOVERED|NO_DEADLOCK", 40)],
+        # d must show at least one deadlock: NO_DEADLOCK there means the two
+        # tasks did not really run together.
+        ("d", r"RECOVERED", 40)],
 }
 
 

@@ -171,6 +171,7 @@ static void run(char key) {
     if (key == 'e' || key == 'f') {
         if (key == 'f') g_worker = rt_start_task(worker_task, "worker", 5, NULL);
         g_noisy = timerBegin(1000000);
+        if (g_noisy == NULL) rt_fatal("timerBegin failed");
         timerAttachInterrupt(g_noisy, on_noisy);
         timerAlarm(g_noisy, kNoisyPeriodUs, true, 0);
     }

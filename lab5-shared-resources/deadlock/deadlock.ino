@@ -110,11 +110,12 @@ static void run(char key) {
 
     // Wait for both, but not forever: that is the deadlock detector.
     int finished = 0;
-    while (finished < 2 && xSemaphoreTake(g_done, pdMS_TO_TICKS(key == 'd' ? 30000 : 1000)) == pdTRUE) finished++;
+    uint32_t wait_ms = (key == 'd') ? 30000 : 1000;
+    while (finished < 2 && xSemaphoreTake(g_done, pdMS_TO_TICKS(wait_ms)) == pdTRUE) finished++;
     float took = (rt_now_us() - t0) / 1000.0f;
 
     if (finished < 2) {
-        Serial.println("after 1 s not both tasks have finished. Who holds what:");
+        Serial.printf("after %lu s not both tasks have finished. Who holds what:\n", (unsigned long)(wait_ms / 1000));
         Serial.printf("  m1 is held by %s, m2 is held by %s\n", holder_name(g_m1), holder_name(g_m2));
         Serial.printf("  A is %s, B is %s\n", state_name(g_a.handle), state_name(g_b.handle));
         Serial.println("  A waits for m2 (held by B), B waits for m1 (held by A): a cycle.");

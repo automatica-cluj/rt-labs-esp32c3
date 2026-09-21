@@ -32,8 +32,8 @@ Tasks the system starts, on this board with the Arduino core:
 | `IDLE` | 0 | runs when nothing else can; frees memory of deleted tasks |
 | `loopTask` | 1 | runs your `setup()` once, then `loop()` forever |
 | `Tmr Svc` | 1 | FreeRTOS software timers |
-| `esp_timer` | 22 | callbacks of `esp_timer` (microsecond timers) |
 | `sys_evt` | 20 | the system event loop (Wi-Fi events), only when Wi-Fi is on |
+| `esp_timer` | 22 | callbacks of `esp_timer` (microsecond timers) |
 | `wifi` | 23 | the Wi-Fi driver, only when Wi-Fi is on |
 
 The labs keep their own tasks between 1 and 20.

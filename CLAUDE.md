@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repo is
 
 Teaching material for the UTCN Real-Time Systems lab: a standalone track of five
-2-hour labs on an **ESP32-C3 Super Mini** (single-core RISC-V, 160 MHz),
+labs on an **ESP32-C3 Super Mini** (single-core RISC-V, 160 MHz),
 programmed with the **Arduino core 3.x** (tested 3.3.7). The sketches call the
 FreeRTOS API directly. The equipment is the board and USB only: all timing
 comes from `esp_timer_get_time()`, the cycle counter and hardware timers,
@@ -104,8 +104,11 @@ ARDUINO_DIRECTORIES_USER=$PWD/.arduino-user arduino-cli compile \
   The task watchdog is 5 s and does not watch the idle task.
   `starvation_wdt` shortens it to 3 s and adds `loopTask` on purpose.
 - READMEs: goal and time, numbered sections, lettered experiments with the
-  sketch key(s) in the heading, as in ``Experiment F — overload (key `c`)`` (no
-  separate Questions section for now). Plain prose, no emojis. They describe what to look for and
+  sketch key(s) in the heading, as in ``Experiment F — overload (key `c`)``.
+  The labs are observation only: each experiment says what the key does, then
+  **Look at** (which output lines) and **What it shows** (the explanation,
+  given rather than asked). No questions for students, no separate Questions
+  section. Plain prose, no emojis. They describe what to look for and
   contain no fabricated numbers. Captured output from a real board may be
   added.
 - The theory pages (Romanian, theory only, platform-neutral) live in the

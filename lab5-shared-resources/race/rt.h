@@ -115,7 +115,7 @@ static inline void rt_fatal(const char* msg) {
 
 // Create a task and give its handle back. Running out of memory is a bug in
 // the lab setup, so it stops the sketch instead of carrying on without it.
-// arg and stack have default values: rt_start_task(fn, "name", 3) is enough.
+// This one takes the stack size; rt_start_task() below is the usual case.
 static inline TaskHandle_t rt_start_task_stack(TaskFunction_t fn, const char* name, UBaseType_t prio,
                                                void* arg, uint32_t stack) {
     TaskHandle_t h = NULL;

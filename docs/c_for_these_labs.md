@@ -26,14 +26,13 @@ static void worker_task(void* arg) {
 ```
 
 `arg` is whatever pointer you passed to `rt_start_task()`. The labs pass a
-pointer to a struct (`Worker* w = (Worker*)arg;`) or to a global variable
-(`char letter = *(char*)arg;`). A task that needs no argument is written
-`static void hog_task(void*)`: C++ lets you leave out the name of a parameter
-you do not use, and the compiler then does not warn about it.
+pointer to a struct (`struct Worker* w = (struct Worker*)arg;`) or to a global
+variable (`char letter = *(char*)arg;`). A task that needs no argument is
+started with `NULL` and begins with `(void)arg;` (see below).
 
-`rt_start_task(fn, "name", prio)` is `xTaskCreate` with a check. Its last two
-parameters, `arg` and `stack`, have **default values** (`NULL` and 4096), so
-you only write them when you need them.
+`rt_start_task(fn, "name", prio, arg)` is `xTaskCreate` with a check and a
+4096-byte stack. `rt_start_task_stack(fn, "name", prio, arg, stack)` is the
+same with a stack size you choose (Lab 1 uses it for the Wi-Fi task).
 
 ## Things you will see
 

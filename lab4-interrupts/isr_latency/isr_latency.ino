@@ -1,13 +1,14 @@
 // isr_latency - from a hardware event to the ISR, and from the ISR to a task
 //
-// A hardware timer counts at 10 MHz and raises an alarm every 1 ms. At the
+// A hardware timer counts at 10 MHz and raises an alarm every 0.997 ms. At the
 // alarm it restarts from 0, so the value the ISR reads on entry is exactly how
 // long the ISR took to start: the interrupt latency (0.1 us resolution).
 // The ISR then wakes a handler task with a task notification. The handler
 // measures how long after the ISR it got to run: the ISR-to-task latency.
 //
 //   a  handler priority 10, ISR asks for a context switch (portYIELD_FROM_ISR)
-//   b  like a, but the ISR does not ask for the switch
+//   b  like a, but the ISR does not ask for the switch, while a task at
+//      priority 1 computes all the time
 //   c  handler priority 2, while a task at priority 5 computes 3 ms, sleeps 2 ms
 //   d  like a, while a task at priority 3 keeps disabling interrupts for
 //      200 us at a time (a critical section)
@@ -20,9 +21,13 @@
 #include "rt.h"
 
 // ---- EXPERIMENT KNOBS ----
-const int kSamples = 2000;          // 1 ms apart: 2 s per run
+const int kSamples = 2000;          // about 1 ms apart: 2 s per run
 const uint32_t kTimerHz = 10000000; // 10 MHz, 0.1 us per count
-const uint32_t kAlarmCounts = 10000;  // 1 ms
+// 0.997 ms, not 1 ms. The timer and the 1 ms tick run from the same crystal,
+// so with exactly 1 ms every alarm would come at the same point between two
+// ticks. 3 us less makes the alarm slide past the tick and meet it at every
+// point (that matters in variant b).
+const uint32_t kAlarmCounts = 9970;
 const uint32_t kCriticalUs = 200;   // variant d
 const uint32_t kNoisyWorkUs = 300;  // variants e and f
 const uint32_t kNoisyPeriodUs = 3700;
@@ -120,6 +125,13 @@ static void busy_task(void* arg) {  // variant c: computes 3 ms, sleeps 2 ms
     vTaskDelete(NULL);
 }
 
+static void background_task(void* arg) {  // variant b: always computing, priority 1
+    (void)arg;  // not used
+    while (!g_stop) rt_busy_us(100);
+    xSemaphoreGive(g_done);
+    vTaskDelete(NULL);
+}
+
 static void critical_task(void* arg) {  // variant d: interrupts off 200 us at a time
     (void)arg;  // not used
     static portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
@@ -160,6 +172,10 @@ static void run(char key) {
     g_stop = false;
     int helpers = 0;
     g_handler = rt_start_task(handler_task, "handler", handler_prio, NULL);
+    if (key == 'b') {
+        rt_start_task(background_task, "background", 1, NULL);
+        helpers++;
+    }
     if (key == 'c') {
         rt_start_task(busy_task, "busy", 5, NULL);
         helpers++;

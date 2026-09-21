@@ -54,32 +54,47 @@ static void part_resolution(void) {
                   (unsigned long)(b - a), (b - a) / (float)CPU_MHZ);
 }
 
+// Cycles per reading: the time between two cycle-counter reads with the clock
+// read in between, minus the same pair with nothing in between.
+static void print_cost(const char* what, uint32_t cycles, uint32_t empty_cycles, int n) {
+    int32_t per = ((int32_t)cycles - (int32_t)empty_cycles) / n;
+    Serial.printf("   %-20s %4ld cycles = %.2f us\n", what, (long)per, per / (float)CPU_MHZ);
+}
+
 static void part_cost(void) {
     const int kN = 1000;
     volatile uint64_t sink = 0;  // stops the compiler from dropping the calls
-    uint32_t c0, c_millis, c_micros, c_timer, c_cycles;
+    uint32_t c0, c_empty = 0, c_millis = 0, c_micros = 0, c_timer = 0, c_cycles = 0;
 
-    c0 = rt_cycles();
-    for (int i = 0; i < kN; i++) sink += millis();
-    c_millis = rt_cycles() - c0;
+    for (int i = 0; i < kN; i++) {
+        c0 = rt_cycles();
+        sink = 0;  // no clock: what the measuring itself costs
+        c_empty += rt_cycles() - c0;
 
-    c0 = rt_cycles();
-    for (int i = 0; i < kN; i++) sink += micros();
-    c_micros = rt_cycles() - c0;
+        c0 = rt_cycles();
+        sink = millis();
+        c_millis += rt_cycles() - c0;
 
-    c0 = rt_cycles();
-    for (int i = 0; i < kN; i++) sink += rt_now_us();
-    c_timer = rt_cycles() - c0;
+        c0 = rt_cycles();
+        sink = micros();
+        c_micros += rt_cycles() - c0;
 
-    c0 = rt_cycles();
-    for (int i = 0; i < kN; i++) sink += rt_cycles();
-    c_cycles = rt_cycles() - c0;
+        c0 = rt_cycles();
+        sink = rt_now_us();
+        c_timer += rt_cycles() - c0;
 
-    Serial.println("\n2. cost of one reading (average of 1000)");
-    Serial.printf("   millis()             %4lu cycles = %.2f us\n", (unsigned long)(c_millis / kN), c_millis / (float)kN / CPU_MHZ);
-    Serial.printf("   micros()             %4lu cycles = %.2f us\n", (unsigned long)(c_micros / kN), c_micros / (float)kN / CPU_MHZ);
-    Serial.printf("   esp_timer_get_time() %4lu cycles = %.2f us\n", (unsigned long)(c_timer / kN), c_timer / (float)kN / CPU_MHZ);
-    Serial.printf("   cycle counter        %4lu cycles = %.2f us\n", (unsigned long)(c_cycles / kN), c_cycles / (float)kN / CPU_MHZ);
+        c0 = rt_cycles();
+        sink = rt_cycles();
+        c_cycles += rt_cycles() - c0;
+    }
+    (void)sink;  // written only, on purpose
+
+    Serial.printf("\n2. cost of one reading (average of %d, measuring overhead of %lu cycles taken off)\n", kN,
+                  (unsigned long)(c_empty / kN));
+    print_cost("millis()", c_millis, c_empty, kN);
+    print_cost("micros()", c_micros, c_empty, kN);
+    print_cost("esp_timer_get_time()", c_timer, c_empty, kN);
+    print_cost("cycle counter", c_cycles, c_empty, kN);
 }
 
 // How long does "sleep for N ms" last? The start is a random point between

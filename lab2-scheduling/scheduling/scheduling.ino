@@ -19,6 +19,7 @@
 
 // ---- EXPERIMENT KNOBS ----
 const UBaseType_t kControlPrio = 10;  // above every worker
+const int kSnapshotMs = 60;           // when scenario d takes its snapshot
 
 struct Worker {
     char letter;
@@ -118,13 +119,17 @@ static void run(char key) {
     UBaseType_t my_prio = uxTaskPriorityGet(NULL);
     vTaskPrioritySet(NULL, kControlPrio);
     rt_tl_start(slice_us, columns);
+    bool snapshot_taken = false;
     for (int i = 0; i < g_nw; i++) {
+        // The snapshot goes between the releases, so it is taken at
+        // kSnapshotMs and not after the last release.
+        if (key == 'd' && !snapshot_taken && release_at[i] > kSnapshotMs) {
+            wait_until_ms(kSnapshotMs);
+            vTaskList(g_snapshot);  // name, state, priority, least free stack (bytes), number, core
+            snapshot_taken = true;
+        }
         wait_until_ms(release_at[i]);
         release(&g_w[i]);
-    }
-    if (key == 'd') {
-        wait_until_ms(60);
-        vTaskList(g_snapshot);  // name, state, priority, least free stack (bytes), number
     }
     for (int i = 0; i < g_nw; i++) xSemaphoreTake(g_done, portMAX_DELAY);
     vTaskPrioritySet(NULL, my_prio);
@@ -133,12 +138,16 @@ static void run(char key) {
     Serial.println("task  prio  release   start  finish  response (ms)");
     for (int i = 0; i < g_nw; i++) {
         struct Worker* w = &g_w[i];
-        Serial.printf("  %c   %4u  %7.1f %7.1f %7.1f  %8.1f\n", w->letter, (unsigned)w->prio, w->release_ms,
-                      w->start_ms, w->finish_ms, w->finish_ms - w->release_ms);
+        if (w->jobs > 1)  // periodic: each job has its own response time, read it from the strip
+            Serial.printf("  %c   %4u  %7.1f %7.1f %7.1f         -  (%d jobs, see the strip)\n", w->letter,
+                          (unsigned)w->prio, w->release_ms, w->start_ms, w->finish_ms, w->jobs);
+        else
+            Serial.printf("  %c   %4u  %7.1f %7.1f %7.1f  %8.1f\n", w->letter, (unsigned)w->prio, w->release_ms,
+                          w->start_ms, w->finish_ms, w->finish_ms - w->release_ms);
     }
     if (key == 'd') {
-        Serial.println("\nsnapshot at 60 ms (X running, R ready, B blocked, S suspended, D deleted)");
-        Serial.println("name          state prio stack  #");
+        Serial.printf("\nsnapshot at %d ms (X running, R ready, B blocked, S suspended, D deleted)\n", kSnapshotMs);
+        Serial.println("name          state prio stack  #  core");
         Serial.print(g_snapshot);
     }
 

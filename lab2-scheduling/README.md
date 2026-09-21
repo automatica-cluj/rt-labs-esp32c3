@@ -105,23 +105,6 @@ Keys start a **hog** task at priority 5 that computes without blocking.
    diligently while it computes. Does that save the board? Why not? What does
    the watchdog actually watch?
 
-## 4. Questions
-
-1. In experiment A, write down the response time of each task as a sum of its
-   own computation and the time taken by others.
-2. The control code runs at priority 10 while it releases workers. What would
-   the timeline of A look like if it ran at priority 1 instead? Try it: change
-   `kControlPrio`.
-3. Time slicing is on in experiment B. Name one situation where you would
-   rather not have it.
-4. In experiment C, what is the longest time L can be delayed by H in any
-   window of 20 ms? What if H's computation grows to 20 ms?
-5. On Linux, `SCHED_FIFO` tasks are held back by RT throttling after 950 ms
-   of every second. What does the FreeRTOS setup here do instead, and which
-   approach is better for (a) a desktop, (b) a pacemaker?
-6. Experiment E step 4: why is it a bad idea to feed a watchdog from inside a
-   loop that can run forever? Where should the feeding happen?
-
 ## Notes
 
 - The watchdog reset in experiment E is expected and harmless.

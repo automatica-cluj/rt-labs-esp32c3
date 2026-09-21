@@ -122,17 +122,3 @@ this by default when the wake-up time has already passed.
 
 Compare the logger's max response time with c. What happens to it over a
 longer run? For a logger, which policy is better? For a motor controller?
-
-## 4. Questions
-
-1. Compute the RTA response time of `logger` in set b by hand. Show every
-   iteration.
-2. The WCET you measured in part 2 depends on caches, interrupts and input.
-   How much margin would you add to it before using it in part 3, and how
-   could you justify the number?
-3. In set c, how much must the logger's C shrink for the set to become
-   schedulable? Use RTA, then check it on the board by editing `kSetC`.
-4. Measured response times on this board are close to RTA. On the Linux lab
-   machine they are much further off. Name three reasons.
-5. What would change in the analysis if D < T, for example if the sensor
-   reading must be finished 5 ms after its release?

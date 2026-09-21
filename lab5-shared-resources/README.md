@@ -120,18 +120,3 @@ Press `d`. No pause between the two takes anymore, 200 rounds per task, 50 ms
 timeout. Now the deadlock only happens when a task switch falls exactly
 between the two takes. Count the timeouts. Run it again. Why is this version
 much more dangerous in a real product than the one in experiment G?
-
-## 4. Questions
-
-1. Experiment B passed with the wrong code. Name another way a race can stay
-   hidden during testing and show up in the field.
-2. The mutex in experiment C is much slower than the critical section. Why,
-   and when is the mutex still the right choice?
-3. Priority inheritance bounds H's blocking to one critical section. What does
-   that say about how long critical sections should be?
-4. The priority ceiling protocol is an alternative to inheritance. How does
-   it work, and which problem from part 3 does it also prevent?
-5. Instead of sharing a variable under a lock, L could send its results to H
-   through a queue (`xQueueSend` / `xQueueReceive`). Would priority inversion
-   still be possible? What does the queue cost instead?
-6. On a two-core ESP32, experiment B would lose updates again. Why?

@@ -115,22 +115,6 @@ python3 tools/plot_serial.py run.log
 
 Do this for B, C and E and put the three plots side by side.
 
-## 4. Questions
-
-Write your answers in a short text file.
-
-1. Why does `vTaskDelay(1)` sometimes return in much less than 1 ms? What does
-   that mean for code that "waits 1 ms to let the hardware settle"?
-2. In experiment A the interval is larger than T. Give the formula. What
-   happens in A if C is larger than T?
-3. `xTaskDelayUntil` fixes the drift. What does it do if a job takes longer
-   than T, so the next release is already in the past?
-4. In C, lateness is caused by a higher-priority task. In B, it is caused by
-   something that is not a task at all. What is it, and how large is it?
-5. The lateness histogram in C has a long tail. Why is the *maximum* the
-   number a real-time engineer cares about, and not the average?
-6. Printing one line costs how many periods of a 1 kHz control loop?
-
 ## Rules for these labs
 
 - Every experiment ends with a `VERDICT:` line. Quote it in your report.

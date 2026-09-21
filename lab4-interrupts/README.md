@@ -123,19 +123,3 @@ releases it counted, and the shortest time between two edges.
 
 `v` prints a verdict line with the counts, and `r` resets them. Do not hold
 BOOT while pressing RST: that starts the bootloader instead of the sketch.
-
-## 4. Questions
-
-1. Draw the timeline of experiment A from the hardware alarm to the handler
-   finishing, with the approximate times you measured.
-2. Why does `portYIELD_FROM_ISR` take the `woken` flag instead of always
-   switching?
-3. From experiments D and E: write down a rule for the maximum length of an
-   ISR and of a critical section in a system whose tightest interrupt latency
-   requirement is 50 µs.
-4. The handler task in C missed events. Give two ways to make sure no event is
-   lost even when the handler is late. (Hint: what does a notification count,
-   and what could a queue hold?)
-5. The debounce task uses the time of the *last* edge. Could you debounce
-   inside the ISR instead, by ignoring edges closer than 20 ms to the previous
-   one? What would you lose?

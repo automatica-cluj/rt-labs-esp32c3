@@ -76,8 +76,12 @@ would a clock that "ticks" with this task show after one hour?
 Press `b`. The task uses `xTaskDelayUntil(&last, 10)`: "wake me at
 `last + 10`", measured from the previous *release*, not from *now*.
 
-The drift should be gone and the jitter small. Where does the remaining jitter
-come from? (Hint: what else runs every millisecond?)
+The drift should be gone, and the jitter very small, possibly 0. The task is
+woken by the tick interrupt. With nothing else running, the way from the tick
+to the task takes the same time in every period, and lateness is measured
+against the earliest wake-up, so a constant delay does not show up as jitter.
+This run is the baseline for C, D and E. Before you run them: what could make
+that way longer in some periods and not in others?
 
 ### Experiment C — a higher-priority task in the way (key `c`)
 

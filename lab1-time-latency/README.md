@@ -35,14 +35,22 @@ The sketch prints five parts:
 1. **Resolution.** The smallest step each clock can show. `millis()` moves in
    whole milliseconds, `micros()` and `esp_timer_get_time()` in microseconds,
    and the cycle counter in 1/160 µs.
-2. **Cost.** How many CPU cycles one reading takes. A clock that costs more to
-   read than the thing you time is useless for that job.
+2. **Cost.** How many CPU cycles one reading takes. The sketch reads the cycle
+   counter just before and just after each reading, and subtracts what the
+   same pair costs with nothing in between, so the measuring itself is not
+   counted. The figure is the average of 1000 readings. A clock that costs
+   more to read than the thing you time is useless for that job.
 3. **Sleeping.** `delay(1)` and `vTaskDelay(1)` do not mean "1000 µs". Look at
    the minimum. FreeRTOS counts delays in ticks of 1 ms, and "one tick from
    now" can be a few microseconds away if you call it just before a tick.
 4. **Busy waiting.** `delayMicroseconds()` and `rt_busy_us()` both keep the CPU.
-   Compare their accuracy. `rt_busy_us()` is how every later lab models
-   "computation time".
+   Compare their accuracy. `delayMicroseconds()` watches the clock, so it
+   stops on time. `rt_busy_us()` runs a fixed number of loop iterations,
+   counted at start-up with interrupts off. Now the tick interrupt comes
+   every millisecond and takes a little of the CPU each time, so the same
+   iterations take slightly longer than asked. That is intended: `rt_busy_us()`
+   is how every later lab models "computation time", and real computation is
+   stretched by interrupts and preemption in the same way.
 5. **Printing.** The cost of one `Serial.printf`. Compare it with part 2. This
    is why the labs never print inside a timing loop: record into an array,
    print afterwards.
@@ -85,17 +93,23 @@ that way longer in some periods and not in others?
 
 ### Experiment C — a higher-priority task in the way (key `c`)
 
-Press `c`. A "hog" task at priority 10 computes 2 ms, sleeps 7 ms, forever.
-Its period is not a multiple of 10 ms, so sometimes it is running exactly when
-our task should wake up.
+Press `c`. A "hog" task at priority 10 is released every 9 ms and computes
+2 ms each time. Its period is not a multiple of 10 ms, so sometimes it is
+running exactly when our task should wake up. The hog has a deadline of its
+own: each job must be done 4 ms after its release. It measures its response
+time (release to finish), and the report prints a `hog:` line with the
+response times and the number of missed deadlines.
 
 Compare the lateness histogram with B. What is the largest lateness you would
 expect from the hog's parameters? Does the measurement agree?
 
 ### Experiment D — raise our priority (key `d`)
 
-Press `d`. Same hog, but our task now has priority 15. What changed, and what
-happened to the hog? Could the hog now miss *its* deadlines?
+Press `d`. Same hog, but our task now has priority 15. What changed for our
+task? Now compare the `hog:` line with the one from C. What is the longest
+response time the hog can now have, given our task's T and C? Does the hog miss its
+deadline, and in how many jobs? Raising one task's priority did not remove
+the interference. Where did it go?
 
 ### Experiment E — the radio (key `e`)
 
@@ -103,7 +117,13 @@ Press `e`. No hog. Instead the Wi-Fi radio scans for networks. The Wi-Fi driver
 runs as a task with priority 23 and in interrupts, both above any task you
 create.
 
-Compare the jitter with B and D. Our task has priority 15, yet it is delayed.
+Compare the jitter with B and D. The effect is rare: only a few of the 300
+periods are late, and the average lateness stays close to 0. Look at the
+line `late by more than 100 us`. Run `e` three times and write down the
+jitter and that count each time. Which one matters for a control loop, the
+average or the worst case?
+
+Our task has priority 15, yet it is delayed.
 Why can raising its priority not fix this? What would you do in a real device
 that needs both Wi-Fi and a tight control loop? (The ESP32 and ESP32-S3 have
 two cores. How would that help?)

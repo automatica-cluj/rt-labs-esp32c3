@@ -3,18 +3,22 @@
 FreeRTOS follows one rule: the highest-priority task that is ready runs. In
 this lab you watch that rule at work on a single CPU: preemption, equal
 priorities sharing the CPU by time slicing, a periodic task cutting into a
-long one. Then you break it on purpose with a task that never lets go of the
-CPU, and let the watchdog clean up.
+long one. Then you see what happens when a task never lets go of the CPU,
+and how the watchdog cleans up.
 
-Time: about 2 hours.
+This lab is about observing. Each experiment says what to press, what to look
+at in the output, and what the result shows.
+
+Time: about 1 to 1.5 hours.
 
 Theory behind this lab (concept pages, in Romanian):
 [Taskuri și stări](https://github.com/automatica-cluj/rt-concepts/blob/main/2-scheduling/tasks-and-states.md),
 [Preempțiune cu priorități fixe](https://github.com/automatica-cluj/rt-concepts/blob/main/2-scheduling/fixed-priority-preemption.md),
 [Înfometare și watchdog](https://github.com/automatica-cluj/rt-concepts/blob/main/2-scheduling/starvation-and-watchdogs.md).
 
-Read [../docs/freertos_concepts.md](../docs/freertos_concepts.md) first,
-sections "Tasks and priorities", "Task states" and "The tick".
+The sections "Tasks and priorities", "Task states" and "The tick" in
+[../docs/freertos_concepts.md](../docs/freertos_concepts.md) introduce the
+terms used below.
 
 ---
 
@@ -37,6 +41,10 @@ The ESP32-C3 has one core, so every worker competes for the same CPU. In the
 Linux labs you had to pin threads to one CPU to get this; here it is simply
 the hardware.
 
+All measured times come out a few percent longer than the plain arithmetic.
+The tick interrupt takes a little CPU time every millisecond, and marking the
+strip costs a clock reading every 100 µs.
+
 ## 2. Experiments
 
 ### Experiment A — preemption (key `a`)
@@ -44,50 +52,70 @@ the hardware.
 Press `a`. L (priority 2) is released at 0 ms, M (3) at 40 ms, H (4) at
 80 ms, and each computes 100 ms.
 
-Before you look: draw the timeline you expect on paper, and predict each
-response time. Then compare. The measured times come out a few percent longer
-than your prediction: the tick interrupt takes a little CPU time every
-millisecond, and marking the strip costs a clock reading every 100 µs. The
-response time of L is not 100 ms. Why not, and what does it consist of?
+**Look at** the strip and the response times in the table.
+
+**What it shows.** Each new task with a higher priority takes the CPU at once:
+
+```
+  0– 40 ms  L runs
+ 40– 80 ms  M arrives and preempts L
+ 80–180 ms  H arrives and preempts M, runs to the end
+180–240 ms  M finishes its remaining 60 ms
+240–300 ms  L finishes its remaining 60 ms
+```
+
+H's response time is about its own 100 ms. L's is about 300 ms: its own
+100 ms plus the 200 ms that M and H ran in the middle of it. A task's response
+time is its own computation plus the time taken by higher-priority tasks.
 
 ### Experiment B — equal priorities (key `b`)
 
 Press `b`. A, B and C all have priority 3, are released together and compute
 40 ms each. The strip has 1 ms columns.
 
-FreeRTOS switches between ready tasks of *equal* priority at every tick. How
-long is each turn? Why do all three finish at nearly the same time, much later
-than 40 ms? Compare with running them one after the other: which is better for
-the *average* response time, and which for the first one to finish?
+**Look at** the strip, and the finish times in the table.
+
+**What it shows.** The letters alternate every column: FreeRTOS switches
+between ready tasks of equal priority at every tick, so each turn is 1 ms.
+All three advance together and finish close to 120 ms, although each needs
+only 40 ms. Run one after the other, they would finish at 40, 80 and 120 ms:
+a better average, but not fair to the last one. Time slicing shares the CPU
+evenly, at the cost of making everyone finish late.
 
 ### Experiment C — a periodic task and a long one (key `c`)
 
 Press `c`. H (priority 4) computes 4 ms every 20 ms, eight times. L
-(priority 2) computes 120 ms in one piece.
+(priority 2) computes 120 ms in one piece. Both start at 0 ms.
 
-Find H's jobs in the strip. What is H's response time for each job? (The
-table gives no response time for H: it has eight, one per job, and the strip
-shows them.) What is
-L's response time, and how can you compute it from H's parameters? (This is
-the idea behind response-time analysis in Lab 3.)
+**Look at** H's jobs in the strip (the table gives no response time for H,
+because it has eight jobs), and L's response time in the table.
+
+**What it shows.** Every H job starts at once and takes about 4 ms: H always
+has the CPU when it needs it. L runs in the gaps. Its response time is its own
+120 ms plus the eight H jobs of 4 ms that fall inside it, about 152 ms. Adding
+up the interference of the higher-priority tasks this way is the idea behind
+response-time analysis in Lab 3.
 
 ### Experiment D — who else is running? (key `d`)
 
 Press `d`. Same as A, plus a snapshot of every task on the chip taken at
 60 ms, printed with `vTaskList()`.
 
-Find `loopTask`, `IDLE`, `esp_timer`, `Tmr Svc` and the three workers. For
-each, note the state (X running, R ready, B blocked, S suspended) and the
-priority. Why is `loopTask` shown as running? Why is L ready and not blocked?
-The "stack" column is the smallest amount of stack that has ever been free, in
-bytes. Which task came closest to running out?
+**Look at** the snapshot table: find `loopTask`, `IDLE`, `esp_timer`,
+`Tmr Svc` and the workers, with their state (X running, R ready, B blocked,
+S suspended) and priority.
 
-The snapshot itself took time: `loopTask` ran at priority 10 while it
-collected it. The strip cannot show that, because a column is 5 ms wide.
-Compare the response times with the ones from A instead (not the finish
-times: a release can land up to 1 ms earlier or later, on a different tick).
-Which response times grew, which did not, and by how much? That is how long
-the snapshot took.
+**What it shows.** There are more tasks than the ones you created: the idle
+task, the timer tasks, and `loopTask`, which runs `loop()`. `loopTask` is
+shown as running because it is the task that takes the snapshot. At 60 ms M
+is ready: it wants the CPU and is waiting only for `loopTask` to finish the
+snapshot. L is ready too, not blocked: it is not waiting for anything, it
+has only been preempted. H does not appear yet, because it is released at
+80 ms. The "stack" column is the least free stack each task has had, in bytes.
+
+The snapshot took time, too little to see in the 5 ms columns. Compare the
+response times with the ones from A: L and M, which were ready at 60 ms,
+grew by the time the snapshot took, and H did not.
 
 ## 3. Starvation and the watchdog: `starvation_wdt`
 
@@ -100,22 +128,26 @@ Keys start a **hog** task at priority 5 that computes without blocking.
 
 ### Experiment E — starved, but not dead (keys `a`, `c`, `b`, `d`)
 
-1. Press `a`. The hog computes for 1 s. Watch the LED. When the hog ends, the
-   sketch prints the longest gap between two `loop()` runs.
+1. Press `a`. The hog computes for 1 s. The LED stops blinking for that
+   second, and the sketch prints a longest gap of about 1 s. `loop()` was
+   starved, but for less than 3 s, so the watchdog stays quiet.
 2. Press `c`. The hog computes for 6 s, but sleeps 1 ms after every 10 ms of
-   work. What is the longest gap now? Why does a 1 ms pause make such a
-   difference to a task at priority 1?
+   work. The LED keeps blinking and the longest gap is about 10 ms. Each
+   1 ms pause is enough for `loop()` to run, because while the hog sleeps,
+   `loop()` is the highest-priority task that is ready.
 3. Press `b`. The hog computes for 6 s without pausing. After about 3 s the
    watchdog fires. It prints which task failed to check in, then a register
    dump and a long block of stack memory (you can ignore both), and resets
    the chip. The sketch starts again and prints the reset reason and the
    variant that was running. Press `i` to print that report again.
 4. Press `d`. The hog now registers itself with the watchdog and feeds it
-   diligently while it computes. Does that save the board? Why not? What does
-   the watchdog actually watch?
+   while it computes. The board still resets. The watchdog watches every
+   task registered with it, and each one must check in on its own. The hog
+   feeding it proves only that the hog is alive. `loop()` is still starved
+   and cannot check in.
 
 ## Notes
 
-- The watchdog reset in experiment E is expected and harmless.
+- The watchdog resets in experiment E are expected and harmless.
 - If the serial monitor does not reconnect after the reset, close and reopen
   it, or press RST.

@@ -104,9 +104,14 @@ static void run(char key) {
     }
     Serial.printf("\n--- variant %c ---\n", key);
 
+    // Create both before either starts. Otherwise A, created first, would run
+    // above loop() and could finish all its rounds before B even exists.
+    UBaseType_t my_prio = uxTaskPriorityGet(NULL);
+    vTaskPrioritySet(NULL, 10);
     int64_t t0 = rt_now_us();
     g_a.handle = rt_start_task(worker_task, "A", kPrio, &g_a);
     g_b.handle = rt_start_task(worker_task, "B", kPrio, &g_b);
+    vTaskPrioritySet(NULL, my_prio);  // now they run
 
     // Wait for both, but not forever: that is the deadlock detector.
     int finished = 0;

@@ -130,14 +130,35 @@ two cores. How would that help?)
 
 ### Optional — plot it
 
+The plot script needs Python 3 with matplotlib. Install it once, in a
+virtual environment inside the repository:
+
+```
+python3 -m venv .venv
+.venv/bin/pip install matplotlib
+```
+
+On Windows: `py -m venv .venv`, then `.venv\Scripts\pip install matplotlib`,
+and use `.venv\Scripts\python` instead of `.venv/bin/python` below.
+
 After a run, press `p` and save the serial output to a file (copy it from the
 monitor, or use `arduino-cli monitor ... | tee run.log`, see setup.md). Then:
 
 ```
-python3 tools/plot_serial.py run.log
+.venv/bin/python tools/plot_serial.py run.log          # opens a window
+.venv/bin/python tools/plot_serial.py run.log b.png    # writes a PNG instead
 ```
 
-Do this for B, C and E and put the three plots side by side.
+The window may open behind the terminal, and the script ends when you close
+it. The left plot shows the interval between wake-ups for every period, the
+right one a histogram of those intervals (the count is on a log scale, so a
+single outlier is visible). Note that it plots intervals, not lateness: one
+late wake-up shows as a long interval followed by a short one. If the file
+holds several `csv:` blocks (you pressed `p` more than once), each one is
+drawn in its own colour on the same axes.
+
+Do this for B, C and E, each in its own file (`b.png`, `c.png`, `e.png`), and
+put the three plots side by side.
 
 ## Rules for these labs
 

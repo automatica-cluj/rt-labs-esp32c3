@@ -30,10 +30,9 @@ small and repeatable.
 | [lab4-interrupts](lab4-interrupts/) | Interrupt latency, ISR-to-task latency, `portYIELD_FROM_ISR`, critical sections, deferred processing, debouncing | `isr_latency`, `button` |
 | [lab5-shared-resources](lab5-shared-resources/) | Race conditions, priority inversion and inheritance, deadlock detection and prevention | `race`, `inversion`, `deadlock` |
 
-Each lab takes about two hours. Each sketch runs its experiments when you
-press a key (`a`, `b`, ...) in the serial monitor, so most experiments need
-no re-upload. Values you are invited to change sit at the top of the sketch
-under `// ---- EXPERIMENT KNOBS ----`.
+Each sketch runs its experiments when you press a key (`a`, `b`, ...) in the
+serial monitor, so most experiments need no re-upload. Values you are invited
+to change sit at the top of the sketch under `// ---- EXPERIMENT KNOBS ----`.
 
 ## How the sketches are built
 

@@ -9,7 +9,10 @@ labs on an **ESP32-C3 Super Mini** (single-core RISC-V, 160 MHz),
 programmed with the **Arduino core 3.x** (tested 3.3.7). The sketches call the
 FreeRTOS API directly. The equipment is the board and USB only: all timing
 comes from `esp_timer_get_time()`, the cycle counter and hardware timers,
-reported over USB CDC serial. The sibling Linux/PREEMPT_RT track lives in
+reported over USB CDC serial. The one exception is optional: Lab 1's
+`periodic_jitter` also drives GPIO0 (periodic task computing) and GPIO1 (hog
+job running) for a logic analyzer, and its README has a section on reading
+them in Saleae Logic 2. The sibling Linux/PREEMPT_RT track lives in
 `../rt-labs-linux`, and its style is followed here.
 
 Layout: `labN-topic/README.md` plus sketch folders `labN-topic/<name>/<name>.ino`,

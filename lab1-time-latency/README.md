@@ -160,6 +160,58 @@ drawn in its own colour on the same axes.
 Do this for B, C and E, each in its own file (`b.png`, `c.png`, `e.png`), and
 put the three plots side by side.
 
+### Optional — watch it on a logic analyzer (keys `a` to `d`)
+
+This part needs a logic analyzer, for example a Saleae with the Logic 2
+application. The sketch drives two pins:
+
+| Analyzer | Board | High while |
+|---|---|---|
+| channel 0 | GPIO0 | the periodic task computes (its C = 3 ms) |
+| channel 1 | GPIO1 | a hog job runs, from its release until it is done |
+| ground | GND | |
+
+In Logic 2, enable digital channels 0 and 1 only, set the digital sample rate
+to 10 MS/s or more (0.1 µs resolution), and set the capture to stop after
+5 s. Set a trigger on a rising edge of channel 0, press Start, then press
+the key in the serial monitor. The capture starts at the first period of the
+run.
+
+**A (key `a`).** Look at the time from one rising edge on channel 0 to the
+next. Select two edges and read the period in the Measurements panel. It
+is C plus the 10 ms sleep, rounded to the 1 ms tick, and not 10 ms. The
+edges slide further away from a fixed 10 ms grid with every period. This is the drift from the report,
+seen on a clock the board does not control.
+
+**B (key `b`).** The rising edges are now 10 ms apart. Zoom in on a few edges
+at the same position in consecutive periods. They move by far less than the
+1 ms tick. This is the baseline.
+
+**C (key `c`).** Look at the places where a channel 1 pulse overlaps the
+moment channel 0 should rise. The rising edge on channel 0 then comes only
+when channel 1 falls: our task was ready but the hog had the CPU. The
+distance from the 10 ms grid to that edge is the lateness in the report, and
+it can be as long as one hog job.
+
+**D (key `d`).** Now channel 0 always rises on the grid. Where the two
+overlap, channel 1 stays high while channel 0 is high. The hog job was
+preempted and finishes 3 ms later. The interference moved from our task to
+the hog, which is why the `hog:` line in D shows longer response times and
+missed deadlines.
+
+**What it shows.** The sketch measures itself with the board's own clock, and
+the analyzer measures the same events from outside. To cross-check them,
+export the channel 0 edges (File, Export Data, CSV), compute
+lateness = edge − (first edge + k × 10 ms) for each period, and compare
+max − min with the jitter the sketch printed. The two should agree closely,
+since the pin goes high a few instructions after the sketch takes its
+timestamp, and `rt_now_us()` counts whole microseconds. The analyzer also sees something the sketch cannot: the
+board's crystal is not exactly the frequency it is meant to be. Over the 3 s
+of a B run, the time from the first to the last rising edge differs slightly
+from 299 × 10 ms. The sketch cannot see this, because it measures time with
+the same crystal. Strictly, the analyzer shows the difference between the
+two crystals, the board's and its own.
+
 ## Rules for these labs
 
 - Every experiment ends with a `VERDICT:` line. Quote it in your report.

@@ -15,9 +15,15 @@
 //
 // "lateness" of period k = wake-up time - (start + k * period). A perfect task
 // has lateness 0 in every period. jitter = max lateness - min lateness.
+//
+// For a logic analyzer: GPIO0 is high while the periodic task computes, GPIO1
+// while a hog job runs (from its release until it is done). Connect the
+// analyzer's ground to GND. The pins are set with gpio_set_level(), which takes
+// well under a microsecond, so they do not change the timing.
 
 #include <WiFi.h>
 
+#include "driver/gpio.h"
 #include "rt.h"
 
 // ---- EXPERIMENT KNOBS ----
@@ -29,6 +35,8 @@ const int kHogWorkUs = 2000;       // ... computes this long ...
 const int kHogDeadlineUs = 4000;   // ... and must be done this long after its release
 const UBaseType_t kHogPrio = 10;
 const int kLateUs = 100;           // a period later than this counts as "late"
+const int kPinTask = 0;            // logic analyzer: periodic task computing
+const int kPinHog = 1;             // logic analyzer: hog job running
 
 static int64_t g_wake[kPeriods];
 static bool g_absolute;
@@ -48,7 +56,9 @@ static void periodic_task(void* arg) {
         else
             vTaskDelay(pdMS_TO_TICKS(kPeriodMs));  // wake T after *now*
         g_wake[k] = rt_now_us();
+        gpio_set_level((gpio_num_t)kPinTask, 1);
         rt_busy_us(kWorkUs);
+        gpio_set_level((gpio_num_t)kPinTask, 0);
     }
     xSemaphoreGive(g_done);
     vTaskDelete(NULL);
@@ -60,7 +70,9 @@ static void hog_task(void* arg) {
     TickType_t last = xTaskGetTickCount();
     int64_t release = rt_now_us();  // the release at tick 'last', in microseconds
     while (!g_stop) {
+        gpio_set_level((gpio_num_t)kPinHog, 1);
         rt_busy_us(kHogWorkUs);
+        gpio_set_level((gpio_num_t)kPinHog, 0);
         // Response time: from the release, not from the moment the hog got the
         // CPU, so time spent waiting for a higher priority task counts too.
         int32_t response = (int32_t)(rt_now_us() - release);
@@ -186,6 +198,10 @@ static void menu(void) {
 
 void setup() {
     rt_begin("lab 1: periodic_jitter");
+    gpio_reset_pin((gpio_num_t)kPinTask);
+    gpio_set_direction((gpio_num_t)kPinTask, GPIO_MODE_OUTPUT);
+    gpio_reset_pin((gpio_num_t)kPinHog);
+    gpio_set_direction((gpio_num_t)kPinHog, GPIO_MODE_OUTPUT);
     g_done = xSemaphoreCreateCounting(4, 0);
     menu();
 }

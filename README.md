@@ -13,6 +13,8 @@ small and repeatable.
 ## Getting started
 
 1. Set up the Arduino IDE and the board: [docs/setup.md](docs/setup.md).
+   New to Arduino? [docs/arduino_overview.md](docs/arduino_overview.md)
+   explains what it is and how a sketch runs.
 2. Read [docs/freertos_concepts.md](docs/freertos_concepts.md): tasks,
    priorities, the tick, interrupts, and how FreeRTOS lets you share data.
 3. If your C is rusty: [docs/c_for_these_labs.md](docs/c_for_these_labs.md).

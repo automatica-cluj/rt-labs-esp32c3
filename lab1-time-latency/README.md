@@ -172,6 +172,97 @@ one a histogram of those intervals (log scale, so a single outlier is
 visible). One late wake-up shows as a long interval followed by a short one.
 Plotting B, C and E side by side shows the three cases at a glance.
 
+### Optional — watch it on a logic analyzer (keys `a` to `d`)
+
+This part needs a logic analyzer, for example a Saleae with the Logic 2
+application. The sketch drives two pins, and they only change during a run,
+in the 3 s after you press a key:
+
+| Analyzer | Board pin | High while |
+|---|---|---|
+| channel 0 | `0` (GPIO0) | the periodic task computes (its C = 3 ms) |
+| channel 1 | `1` (GPIO1) | a hog job runs, from its release until it is done |
+| ground | `G` | |
+
+On a Saleae, the channel wires are coloured like resistor bands: channel 0
+is **black**, channel 1 brown. The grey wires are ground. Black is not
+ground: clipping it to `G` leaves channel 0 empty. One grey wire on `G` is
+enough, since all grounds are connected inside the analyzer. Take care that
+the clip on `G` does not touch `5V` or `3V3` next to it.
+
+In Logic 2, in the Device Settings panel:
+
+- enable digital channels 0 and 1 only
+- set the digital sample rate to 10 MS/s (0.1 µs steps, well below
+  anything this sketch does). Higher rates also record nanosecond spikes
+  from the clips, and one such spike is enough to fire the trigger
+- choose the **Trigger** capture mode: rising edge on channel 0, 5 s of
+  capture after the trigger
+- if the trigger still fires before you press a key, turn on the glitch
+  filter for channels 0 and 1 at about 1 µs. The real pulses are
+  milliseconds long, so the filter removes only spikes
+
+Press Start. Logic 2 waits for the trigger. Then press the key in the
+serial monitor: the capture starts at the first period of the run and stops
+by itself. Press Start again before the next key. Hovering over a pulse
+shows its width, and a pair of Timing Markers on two edges shows the time
+between them.
+
+**A (key `a`).** Only channel 0 moves.
+
+**Look at** the width of a pulse, the time from one rising edge to the next,
+and the time from the first rising edge of the run to the last.
+
+**What it shows.** The pulse is C, 3 ms. The rising edges are T + C apart:
+3 ms high, then the full 10 ms sleep low. The whole run takes longer than
+299 × 10 ms by the drift the report printed. The drift is measured here on a
+clock the board does not control.
+
+**B (key `b`).** Only channel 0 moves.
+
+**Look at** the time between rising edges, then zoom in on a few edges.
+
+**What it shows.** The rising edges are 10 ms apart, the low part shrinks to
+T − C, and the edges move by far less than the 1 ms tick. This is the
+baseline.
+
+**C (key `c`).** Both channels move: 2 ms pulses every 9 ms on channel 1,
+3 ms pulses every 10 ms on channel 0. Because 9 ms and 10 ms differ, the two
+slide past each other.
+
+**Look at** a place where a channel 1 pulse is high at the moment channel 0
+should rise.
+
+**What it shows.** There, channel 0 rises only when channel 1 falls: our
+task was ready, but the hog had the CPU. The distance from the 10 ms grid to
+that edge is the lateness in the report, up to one hog job.
+
+**D (key `d`).** Both channels move, as in C.
+
+**Look at** the same kind of overlap.
+
+**What it shows.** Channel 0 now rises on the grid every time. Instead, the
+channel 1 pulse is 3 ms longer wherever the two overlap: it stays high while
+channel 0 is high, because the hog job was preempted and finished later. The
+interference moved from our task to the hog, which is what the `hog:` line in
+D reports as longer response times and missed deadlines.
+
+Key `e` drives only channel 0. The Wi-Fi activity that delays it is not on a
+pin, so the analyzer shows the few late edges but not their cause.
+
+**Cross-check.** The sketch measures itself with the board's own clock, and
+the analyzer measures the same events from outside. Export the channel 0
+edges (File, Export Data, CSV), compute
+lateness = edge − (first edge + k × 10 ms) for each period, and compare
+max − min with the jitter the sketch printed. The two agree closely: the pin
+goes high a few instructions after the sketch takes its timestamp, and
+`rt_now_us()` counts whole microseconds. The analyzer also shows something
+the sketch cannot. Over the 3 s of a B run, the time from the first to the
+last rising edge differs slightly from 299 × 10 ms, because the board's
+crystal is not exactly its nominal frequency. The sketch cannot see this,
+since it measures time with that same crystal. Strictly, the analyzer shows
+the difference between two crystals, the board's and its own.
+
 ## Rules for these labs
 
 - Every experiment ends with a `VERDICT:` line. Quote it in your report.

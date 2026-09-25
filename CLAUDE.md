@@ -17,7 +17,8 @@ them in Saleae Logic 2. The sibling Linux/PREEMPT_RT track lives in
 
 Layout: `labN-topic/README.md` plus sketch folders `labN-topic/<name>/<name>.ino`,
 each holding a **copy** of `common/rt.h`. `docs/` has the setup guide, the
-FreeRTOS concepts page and the C primer (practical, English). The theory pages
+Arduino overview, the FreeRTOS concepts page and the C primer (practical,
+English). The theory pages
 (Romanian) are in the separate `../rt-concepts` repository, and each lab README
 links to its pages there. `tools/` has the sync, compile, hardware-in-the-loop
 and plot scripts.

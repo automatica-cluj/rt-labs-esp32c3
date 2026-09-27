@@ -780,13 +780,30 @@ static inline void rt_stats_print(const struct rt_stats* s, const char* what, co
                   (unsigned long)s->n, (long)s->min, unit, (long)rt_stats_avg(s), unit, (long)s->max, unit);
 }
 
+// One row per bucket, with a bar of '#' scaled to the fullest bucket. A bucket
+// that is not empty gets at least one '#', so a single outlier stays visible.
+#define STATS_BAR 40
+
 static inline void rt_stats_print_hist(const struct rt_stats* s, const char* unit) {
+    uint32_t top = 1;
+    for (int b = 0; b < STATS_BUCKETS; b++)
+        if (s->hist[b] > top) top = s->hist[b];
+
     for (int b = 0; b < STATS_BUCKETS; b++) {
         long lo = (long)b * s->bucket;
+        char hi[12];
         if (b < STATS_BUCKETS - 1)
-            Serial.printf("  %7ld .. %7ld %-3s %7lu\n", lo, lo + s->bucket, unit, (unsigned long)s->hist[b]);
+            snprintf(hi, sizeof(hi), "%ld", lo + s->bucket);
         else
-            Serial.printf("  %7ld ..     and up %7lu\n", lo, (unsigned long)s->hist[b]);
+            snprintf(hi, sizeof(hi), "and up");
+
+        char bar[STATS_BAR + 1];
+        int len = (int)((uint64_t)s->hist[b] * STATS_BAR / top);
+        if (s->hist[b] > 0 && len == 0) len = 1;
+        memset(bar, '#', len);
+        bar[len] = '\0';
+
+        Serial.printf("  %7ld .. %7s %-3s %7lu  %s\n", lo, hi, unit, (unsigned long)s->hist[b], bar);
     }
 }
 

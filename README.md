@@ -18,6 +18,8 @@ small and repeatable.
 2. Read [docs/freertos_concepts.md](docs/freertos_concepts.md): tasks,
    priorities, the tick, interrupts, and how FreeRTOS lets you share data.
 3. If your C is rusty: [docs/c_for_these_labs.md](docs/c_for_these_labs.md).
+   For questions about a sketch or its output, the [lab helper](tutor/)
+   lets you ask an AI assistant that has all the lab material.
 4. The theory behind each lab, in Romanian, lives in its own repository,
    shared with the Linux track: [rt-concepts](https://github.com/automatica-cluj/rt-concepts).
    Each lab README lists the pages to read before the session.

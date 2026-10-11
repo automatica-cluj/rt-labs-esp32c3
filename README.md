@@ -1,8 +1,9 @@
 # Real-Time Systems — ESP32-C3 labs
 
 Five lab sessions on real-time concepts, run on an **ESP32-C3 Super Mini**
-under FreeRTOS, programmed with the Arduino IDE. Each lab is a directory with a
-README and one to three sketches. All you need is the board and a USB-C
+under FreeRTOS, programmed with the Arduino IDE, plus an introductory Lab 0
+with the Arduino basics. Each lab is a directory with a README and a few
+sketches. All you need is the board and a USB-C
 cable: every measurement comes from the chip's own clocks and is printed over
 USB.
 
@@ -26,6 +27,7 @@ small and repeatable.
 
 | Lab | Topic | Sketches |
 |---|---|---|
+| [lab0-arduino-basics](lab0-arduino-basics/) | Arduino basics, no real-time yet: `setup()`/`loop()`, the serial link, C types, a digital output and input, `delay()` vs `millis()`, PWM, optionally seen on a logic analyzer | `hello_serial`, `blink`, `button_poll`, `pwm_fade` |
 | [lab1-time-latency](lab1-time-latency/) | Clocks, latency and jitter, relative vs absolute periodic release, interference from a higher priority and from Wi-Fi | `clocks`, `periodic_jitter` |
 | [lab2-scheduling](lab2-scheduling/) | Fixed-priority preemptive scheduling, time slicing, task states, starvation, the task watchdog | `scheduling`, `starvation_wdt` |
 | [lab3-periodic-rm](lab3-periodic-rm/) | Measuring WCET, Rate Monotonic, utilisation bound, response-time analysis, overload and overrun policy | `wcet_measure`, `rm_taskset` |
@@ -42,7 +44,8 @@ to change sit at the top of the sketch under `// ---- EXPERIMENT KNOBS ----`.
   (`rt_now_us`, `rt_cycles`), calibrated busy work (`rt_busy_us`), task creation,
   statistics, a timeline strip, and the `VERDICT:` line. Every sketch folder
   holds a copy of it, because the Arduino IDE only finds headers next to the
-  `.ino`. Read it once in Lab 1.
+  `.ino`. Read it once in Lab 1. The Lab 0 sketches use plain Arduino and
+  do not include it.
 - Nothing is printed while something is being measured. Results go into
   arrays and are printed afterwards.
 - Every experiment ends with one `VERDICT: ...` line that sums up what

@@ -1,6 +1,6 @@
 # Setting up: Arduino IDE and the ESP32-C3 Super Mini
 
-Do this once on your own computer before Lab 1. It takes about 20 minutes,
+Do this once on your own computer before Lab 0. It takes about 20 minutes,
 most of it downloading.
 
 ## 1. Install
@@ -33,11 +33,13 @@ $USER`, then log out and in) so you may open the port.
 
 ## 3. First upload
 
-1. Open `lab1-time-latency/clocks/clocks.ino`.
+1. Open `lab1-time-latency/clocks/clocks.ino` (in Lab 0,
+   `lab0-arduino-basics/hello_serial/hello_serial.ino`).
 2. Click *Upload* (the arrow). The first compile takes a few minutes.
 3. Open *Tools > Serial Monitor* and set it to **115200 baud**.
 4. Press the **RST** button on the board. You should see
-   `=== lab 1: clocks ===` followed by the measurements.
+   `=== lab 1: clocks ===` followed by the measurements (or
+   `=== lab 0: hello_serial ===` and its key menu).
 
 To send a key to a sketch, type it in the serial monitor's input line and
 press Enter. The sketches ignore the Enter itself.

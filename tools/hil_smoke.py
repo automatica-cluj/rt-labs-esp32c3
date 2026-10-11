@@ -27,6 +27,17 @@ FQBN = os.environ.get("FQBN", "esp32:esp32:esp32c3:CDCOnBoot=cdc")
 # sketch -> list of (key to send, regex the VERDICT line must match, seconds to wait).
 # key None = no key, the verdict comes by itself after reset.
 CHECKS = {
+    "lab0-arduino-basics/hello_serial": [
+        ("i", r"CHIP=ESP32-C3 CPU_MHZ=160", 5), ("t", r"SIZEOF_INT=4 SIZEOF_LONG=4 SIZEOF_PTR=4", 5),
+        ("f", r"FORMATS_DONE", 5)],
+    "lab0-arduino-basics/blink": [
+        ("b", r"BLINK=OFF", 5), ("b", r"BLINK=ON", 5), ("l", r"LOOPS_PER_S=\d+", 5),
+        ("a", r"BLOCKED_MS=\d+", 10)],
+    "lab0-arduino-basics/button_poll": [
+        ("m", r"MODE=FOLLOW", 5), ("m", r"MODE=TOGGLE", 5), ("v", r"PRESSES=0", 5)],
+    "lab0-arduino-basics/pwm_fade": [
+        ("5", r"DUTY_PERCENT=20", 5), ("f", r"FADE_DONE", 5), ("s", r"SOFT_PWM_HZ=5$", 6),
+        ("h", r"SOFT_PWM_HZ=500", 6)],
     # clocks runs once by itself after reset, usually before the port is open
     # here, so press 'r' to run it again and judge that run.
     "lab1-time-latency/clocks": [("r", r"CLOCKS_DONE", 30)],

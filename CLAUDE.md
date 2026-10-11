@@ -5,14 +5,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repo is
 
 Teaching material for the UTCN Real-Time Systems lab: a standalone track of five
-labs on an **ESP32-C3 Super Mini** (single-core RISC-V, 160 MHz),
-programmed with the **Arduino core 3.x** (tested 3.3.7). The sketches call the
-FreeRTOS API directly. The equipment is the board and USB only: all timing
+labs, plus an introductory Lab 0 (`lab0-arduino-basics`, plain Arduino), on an
+**ESP32-C3 Super Mini** (single-core RISC-V, 160 MHz), programmed with the
+**Arduino core 3.x** (tested 3.3.7). The sketches call the FreeRTOS API
+directly. The equipment is the board and USB only: all timing
 comes from `esp_timer_get_time()`, the cycle counter and hardware timers,
-reported over USB CDC serial. The one exception is optional: Lab 1's
-`periodic_jitter` also drives GPIO0 (periodic task computing) and GPIO1 (hog
-job running) for a logic analyzer, and its README has a section on reading
-them in Saleae Logic 2. The sibling Linux/PREEMPT_RT track lives in
+reported over USB CDC serial. The exceptions are optional: Lab 0's
+`pwm_fade` section has an optional part on watching the LED pin (GPIO8) on
+a logic analyzer, and Lab 1's `periodic_jitter` also drives GPIO0 (periodic
+task computing) and GPIO1 (hog job running) for a logic analyzer, with a
+README section on reading them in Saleae Logic 2. The sibling Linux/PREEMPT_RT track lives in
 `../rt-labs-linux`, and its style is followed here.
 
 Layout: `labN-topic/README.md` plus sketch folders `labN-topic/<name>/<name>.ino`,
@@ -61,7 +63,10 @@ ARDUINO_DIRECTORIES_USER=$PWD/.arduino-user arduino-cli compile \
   the timeline strip, `rt_read_key` and `verdict`. The Arduino IDE only finds
   headers next to the `.ino`, hence the copies. Both scripts pick sketches up
   with the glob `lab*/*/*.ino`, so a new sketch folder is synced and compiled
-  with no further registration.
+  with no further registration. `sync_common.sh` copies `rt.h` only into
+  sketches whose `.ino` has `#include "rt.h"`: the Lab 0 sketches are plain
+  Arduino (their own `Serial.begin`, `Serial.read`, `VERDICT:` printf) and
+  carry no copy.
 - `rt_verdict()` prints `VERDICT: <text>`, and that line is the contract between
   a sketch, its README and `tools/hil_smoke.py`. For each entry in `CHECKS`
   the harness sends the key, then judges the **first** line that starts with
@@ -90,8 +95,8 @@ ARDUINO_DIRECTORIES_USER=$PWD/.arduino-user arduino-cli compile \
   user type declarations, so functions must not take enums declared in the
   sketch. Use `int` constants. Structs declared before use have worked.
 - Each sketch: header comment listing the keys, a `// ---- EXPERIMENT KNOBS ----`
-  block, `rt_begin()` in `setup()`, variants selected by single keys in
-  `loop()`, and one `VERDICT: ...` line per experiment.
+  block, `rt_begin()` in `setup()` (Lab 0: a plain 3 s wait for `Serial`),
+  variants selected by single keys in `loop()`, and one `VERDICT: ...` line per experiment.
 - Nothing is printed inside timing loops. Tasks record into static arrays and
   `loop()` prints afterwards.
 - Lab task priorities stay within 1–20 (esp_timer 22, Wi-Fi 23). The control

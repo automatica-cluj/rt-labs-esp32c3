@@ -38,9 +38,11 @@ CHECKS = {
     "lab0-arduino-basics/pwm_fade": [
         ("5", r"DUTY_PERCENT=20", 5), ("f", r"FADE_DONE", 5), ("s", r"SOFT_PWM_HZ=5$", 6),
         ("h", r"SOFT_PWM_HZ=500", 6)],
-    # Needs the lab Wi-Fi (iot-demo, set in the sketch) and the broker reachable.
-    "lab0-arduino-basics/mqtt_hello": [
-        ("p", r"MQTT_ECHO_MS=\d+", 40), ("a", r"PUBLISHED_ALL", 10), ("s", r"MQTT=CONNECTED", 5)],
+    # lab0-arduino-basics/mqtt_hello is not here: it has no keys, and its one
+    # verdict line (MQTT=CONNECTED) comes right after reset, before this
+    # script reads the port. Test it by hand on the lab Wi-Fi: mosquitto_sub
+    # -t 'rt-labs/<id>/#' shows the uptime messages, and mosquitto_pub -t
+    # 'rt-labs/<id>/led' -m on / off switches the LED.
     # clocks runs once by itself after reset, usually before the port is open
     # here, so press 'r' to run it again and judge that run.
     "lab1-time-latency/clocks": [("r", r"CLOCKS_DONE", 30)],

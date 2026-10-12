@@ -340,9 +340,10 @@ has no 5 GHz radio).
 **MQTT** is a small publish/subscribe protocol, common in IoT. Devices never
 talk to each other directly. Each one connects to a **broker**, a server
 that receives every message and passes it on. A device **publishes** a
-message on a **topic**, a name such as `rt-labs/a1b2c3`, and **subscribes**
-to the topics it wants to hear. The broker forwards each message to every
-client subscribed to its topic, including the sender if it subscribed too.
+message on a **topic**, a name such as `rt-labs/a1b2c3/uptime`, and
+**subscribes** to the topics it wants to hear. The broker forwards each
+message to every client subscribed to its topic. It never sends anything of
+its own: if nobody publishes, nothing moves.
 
 The lab broker is `control.aut.utcluj.ro`, port `11188`, without user name
 or password.
@@ -352,78 +353,64 @@ The sketch joins the lab network, `iot-demo`. To use another network, change
 `kWifiSsid` and `kWifiPassword` in the `EXPERIMENT KNOBS` block and upload
 again.
 
-At start the sketch joins Wi-Fi, prints its IP address, and connects to the
-broker. Each board names itself after the last three bytes of its MAC
-address, for example `a1b2c3`. It subscribes to two topics: its own,
-`rt-labs/<id>`, and `rt-labs/all`, shared by the whole class. Every message
-that arrives on either is printed as a `[mqtt] received on ...` line.
+The sketch has no keys. Each board names itself after the last three bytes
+of its MAC address, for example `a1b2c3`, and prints its two topics at
+start. Once connected it:
+
+- publishes `uptime N s` on `rt-labs/<id>/uptime`, once a second;
+- subscribes to `rt-labs/<id>/led`, and lights the LED on the message `on`
+  and turns it off on `off`.
+
+Every message sent or received is printed in the Serial Monitor.
 
 The MQTT client is part of ESP-IDF, inside the Arduino core, so there is no
 library to install. It runs in its own FreeRTOS task: `loop()` only asks it
-to publish, and the client calls `on_mqtt_event()` when something happens
-(connected, disconnected, a message arrived). That is why the received lines
-can appear while `loop()` is doing something else.
+to publish and then sleeps for a second, and the client calls
+`on_mqtt_event()` when something happens (connected, disconnected, a message
+arrived). That is why a `received` line can appear between two `published`
+lines, while `loop()` is asleep.
 
-### Experiment O — status (key `s`)
+To talk to the board you need a second MQTT client, on a computer:
+`mosquitto_sub` and `mosquitto_pub` from
+[Mosquitto](https://mosquitto.org/download/), or MQTT Explorer (graphical).
 
-Press `s`.
+### Experiment O — the board publishes (start-up)
 
-**Look at** the board id, the two topics, the IP address, the signal
-strength and the broker line.
-
-**What it shows.** Two separate connections have to work before any message
-can pass: the board to the access point (Wi-Fi, with an IP address), and the
-board to the broker (a TCP connection on port 11188). The signal is in dBm,
-a negative number: closer to 0 is stronger. If the broker line says `not
-connected`, the Wi-Fi part may still be fine, and the problem lies between
-the network and the broker.
-
-### Experiment P — a message to yourself (key `p`)
-
-Press `p` a few times.
-
-**Look at** the `publishing on` line, the `received on` line that follows,
-and the time `there and back through the broker`.
-
-**What it shows.** The board publishes `hello N` on its own topic. It is
-also a subscriber of that topic, so the broker sends the message straight
-back, and the event handler prints it. The message left the board, crossed
-the network to the broker and came back. On the lab network the round trip
-took about 200 to 300 ms when this lab was tested, and it varies from press
-to press, depending on the network and on the broker's load. That is
-thousands of times longer than anything measured inside the board in the
-later labs. The sender never learns who else received the message. MQTT
-decouples the two sides: a publisher only knows topics, never subscribers.
-
-### Experiment Q — a message to the class (key `a`)
-
-Press `a`, and watch what happens when others in the room press theirs.
-
-**Look at** the `received on rt-labs/all` lines.
-
-**What it shows.** Every board subscribed to `rt-labs/all` receives every
-message published there, from any board, including its own. One publish,
-many receivers: that is the publish/subscribe model. Each message says which
-board sent it, because the topic does not.
-
-### Optional — from a computer
-
-Any MQTT client can join in, for example `mosquitto_sub` and `mosquitto_pub`
-from [Mosquitto](https://mosquitto.org/download/), or MQTT Explorer (a
-graphical one). To see every message of the lab:
+Press RST, and on the computer subscribe to everything under `rt-labs`:
 
 ```
 mosquitto_sub -h control.aut.utcluj.ro -p 11188 -t 'rt-labs/#' -v
 ```
 
-`#` matches any rest of a topic, so this subscribes to all boards at once.
-To send a message to one board, publish on its topic, using the id that `s`
-printed:
+**Look at** the start-up lines in the Serial Monitor (Wi-Fi, IP address,
+`connected`, `subscribed`), then the `uptime` messages arriving in the
+terminal.
+
+**What it shows.** Two connections must work before any message passes: the
+board to the access point (Wi-Fi, with an IP address), and the board to the
+broker (TCP, port 11188). From then on, each `published` line in the Serial
+Monitor shows up a moment later in the terminal: the message went from the
+board to the broker and from the broker to `mosquitto_sub`. The board does
+not know who listens; it only knows its topic. `#` matches any rest of a
+topic, so the terminal sees every board in the room.
+
+### Experiment P — the board receives (the LED)
+
+Send `on`, then `off`, to the board's LED topic, with the id it printed:
 
 ```
-mosquitto_pub -h control.aut.utcluj.ro -p 11188 -t 'rt-labs/a1b2c3' -m 'hello from my laptop'
+mosquitto_pub -h control.aut.utcluj.ro -p 11188 -t 'rt-labs/a1b2c3/led' -m on
+mosquitto_pub -h control.aut.utcluj.ro -p 11188 -t 'rt-labs/a1b2c3/led' -m off
 ```
 
-The board prints it like any other message. The broker is shared and has no
-password, so anyone on it can read and write these topics: never send
-anything private over it.
+**Look at** the LED, and the `received on ...` and `LED on` / `LED off`
+lines in the Serial Monitor. Then send something else, such as `-m blink`.
+
+**What it shows.** The message went from the computer to the broker and
+from the broker to the board, the only subscriber of that topic. The board
+compares the text with `on` and `off` and sets the pin. Anything else is
+printed and ignored. Any client on the broker can switch your LED, and you
+can switch your neighbour's by using their id.
+
+The broker is shared and has no password, so anyone on it can read and write
+these topics: never send anything private over it.

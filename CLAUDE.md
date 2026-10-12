@@ -13,7 +13,9 @@ comes from `esp_timer_get_time()`, the cycle counter and hardware timers,
 reported over USB CDC serial. Lab 0's `mqtt_hello` also needs a Wi-Fi
 network (the lab's `iot-demo`, set as knobs in the sketch) and the class MQTT broker
 `control.aut.utcluj.ro:11188` (anonymous, plain TCP); it uses ESP-IDF's
-`mqtt_client.h` from the core, so no library install. The other exceptions
+`mqtt_client.h` from the core, so no library install. It has no keys:
+it publishes uptime once a second and switches the LED on `on`/`off`.
+It is the one sketch without a `CHECKS` entry (see the comment there). The other exceptions
 are optional: Lab 0's
 `pwm_fade` section has an optional part on watching the LED pin (GPIO8) on
 a logic analyzer, and Lab 1's `periodic_jitter` also drives GPIO0 (periodic

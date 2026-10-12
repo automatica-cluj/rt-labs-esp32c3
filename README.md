@@ -27,7 +27,7 @@ small and repeatable.
 
 | Lab | Topic | Sketches |
 |---|---|---|
-| [lab0-arduino-basics](lab0-arduino-basics/) | Arduino basics, no real-time yet: `setup()`/`loop()`, the serial link, C types, a digital output and input, `delay()` vs `millis()`, PWM, optionally seen on a logic analyzer | `hello_serial`, `blink`, `button_poll`, `pwm_fade` |
+| [lab0-arduino-basics](lab0-arduino-basics/) | Arduino basics, no real-time yet: `setup()`/`loop()`, the serial link, C types, a digital output and input, `delay()` vs `millis()`, PWM, optionally seen on a logic analyzer, MQTT messages over Wi-Fi | `hello_serial`, `blink`, `button_poll`, `pwm_fade`, `mqtt_hello` |
 | [lab1-time-latency](lab1-time-latency/) | Clocks, latency and jitter, relative vs absolute periodic release, interference from a higher priority and from Wi-Fi | `clocks`, `periodic_jitter` |
 | [lab2-scheduling](lab2-scheduling/) | Fixed-priority preemptive scheduling, time slicing, task states, starvation, the task watchdog | `scheduling`, `starvation_wdt` |
 | [lab3-periodic-rm](lab3-periodic-rm/) | Measuring WCET, Rate Monotonic, utilisation bound, response-time analysis, overload and overrun policy | `wcet_measure`, `rm_taskset` |

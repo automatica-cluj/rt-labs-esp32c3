@@ -3,15 +3,15 @@
 Before the real-time labs, the plain Arduino tools they are built from: the
 `setup()` / `loop()` structure, the serial link to your computer, a digital
 output (the LED), a digital input (the BOOT button), waiting with `delay()`
-against waiting with `millis()`, and brightness by pulse-width modulation,
-which you can also watch on a logic analyzer if you have one. Four short
-sketches, one idea each. Nothing here needs FreeRTOS or `rt.h`:
+against waiting with `millis()`, brightness by pulse-width modulation
+(which you can also watch on a logic analyzer if you have one), and sending
+and receiving MQTT messages over Wi-Fi. Five short sketches, one idea each. Nothing here needs FreeRTOS or `rt.h`:
 it is the Arduino API as you would use it on any board.
 
 This lab is about observing. Each experiment says what to press, what to look
 at in the output, and what the result shows.
 
-Time: about 1 hour, including setup.
+Time: about 1 to 1.5 hours, including setup.
 
 Background for this lab:
 [../docs/arduino_overview.md](../docs/arduino_overview.md) (what Arduino is
@@ -331,3 +331,99 @@ made by `digitalWrite()` and `delayMicroseconds()` in the CPU, so anything
 else the CPU does, such as an interrupt, can shift one of them a little. The
 edges from LEDC come from a hardware counter, and nothing the CPU does moves
 them.
+
+## 6. Messages over Wi-Fi: `mqtt_hello`
+
+This part needs a Wi-Fi network the board can join (2.4 GHz; the ESP32-C3
+has no 5 GHz radio).
+
+**MQTT** is a small publish/subscribe protocol, common in IoT. Devices never
+talk to each other directly. Each one connects to a **broker**, a server
+that receives every message and passes it on. A device **publishes** a
+message on a **topic**, a name such as `rt-labs/a1b2c3`, and **subscribes**
+to the topics it wants to hear. The broker forwards each message to every
+client subscribed to its topic, including the sender if it subscribed too.
+
+The lab broker is `control.aut.utcluj.ro`, port `11188`, without user name
+or password.
+
+Upload `mqtt_hello/mqtt_hello.ino`, open the Serial Monitor and press RST.
+The sketch joins the lab network, `iot-demo`. To use another network, change
+`kWifiSsid` and `kWifiPassword` in the `EXPERIMENT KNOBS` block and upload
+again.
+
+At start the sketch joins Wi-Fi, prints its IP address, and connects to the
+broker. Each board names itself after the last three bytes of its MAC
+address, for example `a1b2c3`. It subscribes to two topics: its own,
+`rt-labs/<id>`, and `rt-labs/all`, shared by the whole class. Every message
+that arrives on either is printed as a `[mqtt] received on ...` line.
+
+The MQTT client is part of ESP-IDF, inside the Arduino core, so there is no
+library to install. It runs in its own FreeRTOS task: `loop()` only asks it
+to publish, and the client calls `on_mqtt_event()` when something happens
+(connected, disconnected, a message arrived). That is why the received lines
+can appear while `loop()` is doing something else.
+
+### Experiment O — status (key `s`)
+
+Press `s`.
+
+**Look at** the board id, the two topics, the IP address, the signal
+strength and the broker line.
+
+**What it shows.** Two separate connections have to work before any message
+can pass: the board to the access point (Wi-Fi, with an IP address), and the
+board to the broker (a TCP connection on port 11188). The signal is in dBm,
+a negative number: closer to 0 is stronger. If the broker line says `not
+connected`, the Wi-Fi part may still be fine, and the problem lies between
+the network and the broker.
+
+### Experiment P — a message to yourself (key `p`)
+
+Press `p` a few times.
+
+**Look at** the `publishing on` line, the `received on` line that follows,
+and the time `there and back through the broker`.
+
+**What it shows.** The board publishes `hello N` on its own topic. It is
+also a subscriber of that topic, so the broker sends the message straight
+back, and the event handler prints it. The message left the board, crossed
+the network to the broker and came back. On the lab network the round trip
+took about 200 to 300 ms when this lab was tested, and it varies from press
+to press, depending on the network and on the broker's load. That is
+thousands of times longer than anything measured inside the board in the
+later labs. The sender never learns who else received the message. MQTT
+decouples the two sides: a publisher only knows topics, never subscribers.
+
+### Experiment Q — a message to the class (key `a`)
+
+Press `a`, and watch what happens when others in the room press theirs.
+
+**Look at** the `received on rt-labs/all` lines.
+
+**What it shows.** Every board subscribed to `rt-labs/all` receives every
+message published there, from any board, including its own. One publish,
+many receivers: that is the publish/subscribe model. Each message says which
+board sent it, because the topic does not.
+
+### Optional — from a computer
+
+Any MQTT client can join in, for example `mosquitto_sub` and `mosquitto_pub`
+from [Mosquitto](https://mosquitto.org/download/), or MQTT Explorer (a
+graphical one). To see every message of the lab:
+
+```
+mosquitto_sub -h control.aut.utcluj.ro -p 11188 -t 'rt-labs/#' -v
+```
+
+`#` matches any rest of a topic, so this subscribes to all boards at once.
+To send a message to one board, publish on its topic, using the id that `s`
+printed:
+
+```
+mosquitto_pub -h control.aut.utcluj.ro -p 11188 -t 'rt-labs/a1b2c3' -m 'hello from my laptop'
+```
+
+The board prints it like any other message. The broker is shared and has no
+password, so anyone on it can read and write these topics: never send
+anything private over it.

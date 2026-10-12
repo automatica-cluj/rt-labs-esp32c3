@@ -10,7 +10,11 @@ labs, plus an introductory Lab 0 (`lab0-arduino-basics`, plain Arduino), on an
 **Arduino core 3.x** (tested 3.3.7). The sketches call the FreeRTOS API
 directly. The equipment is the board and USB only: all timing
 comes from `esp_timer_get_time()`, the cycle counter and hardware timers,
-reported over USB CDC serial. The exceptions are optional: Lab 0's
+reported over USB CDC serial. Lab 0's `mqtt_hello` also needs a Wi-Fi
+network (the lab's `iot-demo`, set as knobs in the sketch) and the class MQTT broker
+`control.aut.utcluj.ro:11188` (anonymous, plain TCP); it uses ESP-IDF's
+`mqtt_client.h` from the core, so no library install. The other exceptions
+are optional: Lab 0's
 `pwm_fade` section has an optional part on watching the LED pin (GPIO8) on
 a logic analyzer, and Lab 1's `periodic_jitter` also drives GPIO0 (periodic
 task computing) and GPIO1 (hog job running) for a logic analyzer, with a

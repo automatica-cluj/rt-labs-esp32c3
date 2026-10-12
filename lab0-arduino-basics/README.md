@@ -3,15 +3,15 @@
 Before the real-time labs, the plain Arduino tools they are built from: the
 `setup()` / `loop()` structure, the serial link to your computer, a digital
 output (the LED), a digital input (the BOOT button), waiting with `delay()`
-against waiting with `millis()`, and brightness by pulse-width modulation,
-which you can also watch on a logic analyzer if you have one. Four short
-sketches, one idea each. Nothing here needs FreeRTOS or `rt.h`:
+against waiting with `millis()`, brightness by pulse-width modulation
+(which you can also watch on a logic analyzer if you have one), and sending
+and receiving MQTT messages over Wi-Fi. Five short sketches, one idea each. Nothing here needs FreeRTOS or `rt.h`:
 it is the Arduino API as you would use it on any board.
 
 This lab is about observing. Each experiment says what to press, what to look
 at in the output, and what the result shows.
 
-Time: about 1 hour, including setup.
+Time: about 1 to 1.5 hours, including setup.
 
 Background for this lab:
 [../docs/arduino_overview.md](../docs/arduino_overview.md) (what Arduino is
@@ -331,3 +331,86 @@ made by `digitalWrite()` and `delayMicroseconds()` in the CPU, so anything
 else the CPU does, such as an interrupt, can shift one of them a little. The
 edges from LEDC come from a hardware counter, and nothing the CPU does moves
 them.
+
+## 6. Messages over Wi-Fi: `mqtt_hello`
+
+This part needs a Wi-Fi network the board can join (2.4 GHz; the ESP32-C3
+has no 5 GHz radio).
+
+**MQTT** is a small publish/subscribe protocol, common in IoT. Devices never
+talk to each other directly. Each one connects to a **broker**, a server
+that receives every message and passes it on. A device **publishes** a
+message on a **topic**, a name such as `rt-labs/a1b2c3/uptime`, and
+**subscribes** to the topics it wants to hear. The broker forwards each
+message to every client subscribed to its topic. It never sends anything of
+its own: if nobody publishes, nothing moves.
+
+The lab broker is `control.aut.utcluj.ro`, port `11188`, without user name
+or password.
+
+Upload `mqtt_hello/mqtt_hello.ino`, open the Serial Monitor and press RST.
+The sketch joins the lab network, `iot-demo`. To use another network, change
+`kWifiSsid` and `kWifiPassword` in the `EXPERIMENT KNOBS` block and upload
+again.
+
+The sketch has no keys. Each board names itself after the last three bytes
+of its MAC address, for example `a1b2c3`, and prints its two topics at
+start. Once connected it:
+
+- publishes `uptime N s` on `rt-labs/<id>/uptime`, once a second;
+- subscribes to `rt-labs/<id>/led`, and lights the LED on the message `on`
+  and turns it off on `off`.
+
+Every message sent or received is printed in the Serial Monitor.
+
+The MQTT client is part of ESP-IDF, inside the Arduino core, so there is no
+library to install. It runs in its own FreeRTOS task: `loop()` only asks it
+to publish and then sleeps for a second, and the client calls
+`on_mqtt_event()` when something happens (connected, disconnected, a message
+arrived). That is why a `received` line can appear between two `published`
+lines, while `loop()` is asleep.
+
+To talk to the board you need a second MQTT client, on a computer:
+`mosquitto_sub` and `mosquitto_pub` from
+[Mosquitto](https://mosquitto.org/download/), or MQTT Explorer (graphical).
+
+### Experiment O — the board publishes (start-up)
+
+Press RST, and on the computer subscribe to everything under `rt-labs`:
+
+```
+mosquitto_sub -h control.aut.utcluj.ro -p 11188 -t 'rt-labs/#' -v
+```
+
+**Look at** the start-up lines in the Serial Monitor (Wi-Fi, IP address,
+`connected`, `subscribed`), then the `uptime` messages arriving in the
+terminal.
+
+**What it shows.** Two connections must work before any message passes: the
+board to the access point (Wi-Fi, with an IP address), and the board to the
+broker (TCP, port 11188). From then on, each `published` line in the Serial
+Monitor shows up a moment later in the terminal: the message went from the
+board to the broker and from the broker to `mosquitto_sub`. The board does
+not know who listens; it only knows its topic. `#` matches any rest of a
+topic, so the terminal sees every board in the room.
+
+### Experiment P — the board receives (the LED)
+
+Send `on`, then `off`, to the board's LED topic, with the id it printed:
+
+```
+mosquitto_pub -h control.aut.utcluj.ro -p 11188 -t 'rt-labs/a1b2c3/led' -m on
+mosquitto_pub -h control.aut.utcluj.ro -p 11188 -t 'rt-labs/a1b2c3/led' -m off
+```
+
+**Look at** the LED, and the `received on ...` and `LED on` / `LED off`
+lines in the Serial Monitor. Then send something else, such as `-m blink`.
+
+**What it shows.** The message went from the computer to the broker and
+from the broker to the board, the only subscriber of that topic. The board
+compares the text with `on` and `off` and sets the pin. Anything else is
+printed and ignored. Any client on the broker can switch your LED, and you
+can switch your neighbour's by using their id.
+
+The broker is shared and has no password, so anyone on it can read and write
+these topics: never send anything private over it.

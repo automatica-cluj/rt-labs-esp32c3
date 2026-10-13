@@ -486,3 +486,9 @@ can switch your neighbour's by using their id.
 
 The broker is shared and has no password, so anyone on it can read and write
 these topics: never send anything private over it.
+
+The sketch keeps working with the Serial Monitor closed, because `setup()`
+calls `Serial.setTxTimeoutMs(0)`. Without that line, a board on a computer's
+USB with nobody reading the port can end up waiting up to 2 s at every print,
+and the uptime messages would then come every 2 s or more instead of every
+second (see [../docs/setup.md](../docs/setup.md), section 4).

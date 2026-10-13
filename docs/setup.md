@@ -56,6 +56,21 @@ it. The chip itself is fine. Put it in bootloader mode by hand:
 
 If *Upload* hangs at "Connecting...", do the same thing while it is waiting.
 
+**A sketch runs slower when the Serial Monitor is closed.** With the board
+plugged into a computer, after the port has been opened once, and with no
+program reading it any more, the board's send buffer fills up. From then on
+every `Serial.print` waits up to 2 s for a reader before it gives up (core
+3.3.x retries 20 times 100 ms). A periodic task that prints then runs every
+2 s instead of every 100 ms, and catches up in a burst when you open the
+monitor again. It shows with a lot of output: a task printing about 2 KB/s
+stalled like this on a test board, one printing a short line per second did
+not. On a power bank or charger the board sees no host, and nothing waits. A sketch that must run
+unattended on a computer's USB calls `Serial.setTxTimeoutMs(0);` right after
+`Serial.begin()`: text nobody reads is then dropped. The Lab 0 sketches that
+print on their own (`button_poll`, `two_tasks`, `mqtt_hello`) do this. The
+other labs do not need it, since you drive them from the open monitor, and
+they print long tables that a zero timeout could cut short.
+
 ## 5. The board
 
 | | |

@@ -65,6 +65,10 @@ static void temperature_task(void* arg) {
 
 void setup() {
     Serial.begin(115200);
+    // With the board on USB but no Serial Monitor open, each print would
+    // wait up to 2 s for a reader (the core retries 20 x 100 ms) and stall
+    // this sketch. Timeout 0: text nobody reads is dropped instead.
+    Serial.setTxTimeoutMs(0);
     uint32_t t = millis();
     while (!Serial && millis() - t < 3000) delay(10);
     delay(200);

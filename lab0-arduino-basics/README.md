@@ -3,10 +3,12 @@
 Before the real-time labs, the plain Arduino tools they are built from: the
 `setup()` / `loop()` structure, the serial link to your computer, a digital
 output (the LED), a digital input (the BOOT button), waiting with `delay()`
-against waiting with `millis()`, brightness by pulse-width modulation
-(which you can also watch on a logic analyzer if you have one), and sending
-and receiving MQTT messages over Wi-Fi. Five short sketches, one idea each. Nothing here needs FreeRTOS or `rt.h`:
-it is the Arduino API as you would use it on any board.
+against waiting with `millis()`, and brightness by pulse-width modulation
+(which you can also watch on a logic analyzer if you have one). Then a first
+look at FreeRTOS, two periodic tasks sharing the serial port through a
+mutex, and sending and receiving MQTT messages over Wi-Fi. Six short
+sketches, one idea each. None of them uses `rt.h`: the code is the Arduino
+API, plus a few FreeRTOS calls in `two_tasks`.
 
 This lab is about observing. Each experiment says what to press, what to look
 at in the output, and what the result shows.
@@ -332,7 +334,77 @@ else the CPU does, such as an interrupt, can shift one of them a little. The
 edges from LEDC come from a hardware counter, and nothing the CPU does moves
 them.
 
-## 6. Messages over Wi-Fi: `mqtt_hello`
+## 6. Two periodic tasks: `two_tasks`
+
+Upload `two_tasks/two_tasks.ino`, open the Serial Monitor and press RST.
+The sketch has no keys.
+
+Until now everything ran in `loop()`. Here `setup()` creates two FreeRTOS
+**tasks**, and `loop()` does nothing. A task is an ordinary function with an
+endless loop, started with `xTaskCreate()`. The scheduler switches the one
+CPU between the tasks that are ready to run.
+
+- `counter` runs every 1 s and prints an integer, a counter.
+- `temperature` runs every 2 s and prints a float, the chip temperature.
+
+Each task sleeps with `xTaskDelayUntil(&last, period)`, which means "wake me
+at `last + period`" and then moves `last` on by one period. Both tasks print
+to the same serial port, so each one formats its line first, then takes a
+**mutex** (`xSemaphoreTake`), prints, and gives it back (`xSemaphoreGive`).
+After 10 counter periods the sketch prints a verdict line with how many
+times each task ran.
+
+Captured from a board (the first lines go by before the Serial Monitor
+opens):
+
+```
+[counter     t=  3000 ms] n = 4
+[temperature t=  4000 ms] chip at 30.8 C
+[counter     t=  4000 ms] n = 5
+[counter     t=  5000 ms] n = 6
+[temperature t=  6000 ms] chip at 30.8 C
+[counter     t=  6000 ms] n = 7
+...
+[counter     t=  9000 ms] n = 10
+VERDICT: COUNTER=10 TEMPERATURE=5
+```
+
+### Experiment O — two periods
+
+**Look at** the `t=` column of each task.
+
+**What it shows.** Each task keeps its own rhythm: `counter` every 1000 ms,
+`temperature` every 2000 ms, independently of each other and of `loop()`.
+The times land exactly on the grid, with no drift, although each task spends
+some time printing. `xTaskDelayUntil` wakes a task at an absolute time
+(`last + period`), so the time spent in the task does not add up from one
+period to the next. A `delay(1000)` at the end of the loop would wait
+1000 ms *after* the printing, and the times would slowly creep. Lab 1
+measures this difference.
+
+Ten counter periods take 9 s (the first one runs at t = 0), and in those 9 s
+`temperature` ran at 0, 2, 4, 6 and 8 s: hence `COUNTER=10 TEMPERATURE=5`.
+
+### Experiment P — two tasks, one serial port
+
+**Look at** the lines at t = 4000, 6000, 8000 ms, where both tasks wake in
+the same moment.
+
+**What it shows.** Both tasks are ready at once, but there is one CPU and
+one serial port. With equal priorities the scheduler picks the order, not
+the order of the code: on the board above `temperature` came first. Set
+`kCounterPrio = 3` and upload again: `counter` now always prints first,
+because FreeRTOS always runs the highest-priority ready task. Lab 2 is about
+this rule.
+
+Every line comes out whole, never mixed with the other task's. That is the
+mutex: while one task holds it, the other waits in `xSemaphoreTake()` until
+it is given back. The serial port is a **shared resource**, and the mutex
+lets only one task use it at a time. Holding the mutex only while printing
+(the line is formatted before) keeps the other task's wait short. Lab 5 shows
+what goes wrong with shared data when there is no such protection.
+
+## 7. Messages over Wi-Fi: `mqtt_hello`
 
 This part needs a Wi-Fi network the board can join (2.4 GHz; the ESP32-C3
 has no 5 GHz radio).
@@ -374,7 +446,7 @@ To talk to the board you need a second MQTT client, on a computer:
 `mosquitto_sub` and `mosquitto_pub` from
 [Mosquitto](https://mosquitto.org/download/), or MQTT Explorer (graphical).
 
-### Experiment O — the board publishes (start-up)
+### Experiment Q — the board publishes (start-up)
 
 Press RST, and on the computer subscribe to everything under `rt-labs`:
 
@@ -394,7 +466,7 @@ board to the broker and from the broker to `mosquitto_sub`. The board does
 not know who listens; it only knows its topic. `#` matches any rest of a
 topic, so the terminal sees every board in the room.
 
-### Experiment P — the board receives (the LED)
+### Experiment R — the board receives (the LED)
 
 Send `on`, then `off`, to the board's LED topic, with the id it printed:
 

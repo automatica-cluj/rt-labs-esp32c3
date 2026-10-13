@@ -38,6 +38,8 @@ CHECKS = {
     "lab0-arduino-basics/pwm_fade": [
         ("5", r"DUTY_PERCENT=20", 5), ("f", r"FADE_DONE", 5), ("s", r"SOFT_PWM_HZ=5$", 6),
         ("h", r"SOFT_PWM_HZ=500", 6)],
+    # No keys: one verdict about 9 s after reset, after 10 counter periods.
+    "lab0-arduino-basics/two_tasks": [(None, r"COUNTER=10 TEMPERATURE=5", 20)],
     # lab0-arduino-basics/mqtt_hello is not here: it has no keys, and its one
     # verdict line (MQTT=CONNECTED) comes right after reset, before this
     # script reads the port. Test it by hand on the lab Wi-Fi: mosquitto_sub

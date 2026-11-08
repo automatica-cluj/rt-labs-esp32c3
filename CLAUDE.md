@@ -4,8 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-Teaching material for the UTCN Real-Time Systems lab: a standalone track of five
-labs, plus an introductory Lab 0 (`lab0-arduino-basics`, plain Arduino), on an
+Teaching material for the UTCN Real-Time Systems lab: a standalone track of six
+labs (Lab 6, `lab6-task-patterns`, is plain Arduino and FreeRTOS calls, without
+`rt.h`), plus an introductory Lab 0 (`lab0-arduino-basics`, plain Arduino), on an
 **ESP32-C3 Super Mini** (single-core RISC-V, 160 MHz), programmed with the
 **Arduino core 3.x** (tested 3.3.7). The sketches call the FreeRTOS API
 directly. The equipment is the board and USB only: all timing
@@ -70,7 +71,7 @@ ARDUINO_DIRECTORIES_USER=$PWD/.arduino-user arduino-cli compile \
   headers next to the `.ino`, hence the copies. Both scripts pick sketches up
   with the glob `lab*/*/*.ino`, so a new sketch folder is synced and compiled
   with no further registration. `sync_common.sh` copies `rt.h` only into
-  sketches whose `.ino` has `#include "rt.h"`: the Lab 0 sketches are plain
+  sketches whose `.ino` has `#include "rt.h"`: the Lab 0 and Lab 6 sketches are plain
   Arduino (their own `Serial.begin`, `Serial.read`, `VERDICT:` printf) and
   carry no copy.
 - `rt_verdict()` prints `VERDICT: <text>`, and that line is the contract between
@@ -101,7 +102,7 @@ ARDUINO_DIRECTORIES_USER=$PWD/.arduino-user arduino-cli compile \
   user type declarations, so functions must not take enums declared in the
   sketch. Use `int` constants. Structs declared before use have worked.
 - Each sketch: header comment listing the keys, a `// ---- EXPERIMENT KNOBS ----`
-  block, `rt_begin()` in `setup()` (Lab 0: a plain 3 s wait for `Serial`),
+  block, `rt_begin()` in `setup()` (Labs 0 and 6: a plain 3 s wait for `Serial`),
   variants selected by single keys in `loop()`, and one `VERDICT: ...` line per experiment.
 - Nothing is printed inside timing loops. Tasks record into static arrays and
   `loop()` prints afterwards.

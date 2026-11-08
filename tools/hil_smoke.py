@@ -74,6 +74,19 @@ CHECKS = {
         # d must show at least one deadlock: NO_DEADLOCK there means the two
         # tasks did not really run together.
         ("d", r"RECOVERED", 40)],
+    "lab6-task-patterns/periodic_absolute": [
+        ("a", r"ABSOLUTE NO_DRIFT", 6), ("r", r"RELATIVE DRIFT", 6)],
+    "lab6-task-patterns/torn_state": [
+        ("m", r"MUTEX=OFF INCONSISTENT=[1-9]", 5), ("m", r"MUTEX=ON INCONSISTENT=0\b", 5)],
+    # Nobody presses BOOT here, so only the verdict's format can be judged.
+    "lab6-task-patterns/isr_queue": [("v", r"INTERRUPTS=\d+ BOUNCES=\d+", 5)],
+    "lab6-task-patterns/sporadic": [("bbbbv", r"ACCEPTED=1 REJECTED=3", 5)],
+    # The "key" can be whole command lines; STATUS prints the verdict.
+    "lab6-task-patterns/aperiodic": [
+        ("BLINK 20\nBLINK 200\nSTATUS\n", r"LED_MODE=BLINK BLINK_MS=200 OK=2 ERROR=1", 5),
+        ("LED ON\nSTATUS\n", r"LED_MODE=ON", 5),
+        ("LED OFF\nxyz\nSTATUS\n", r"LED_MODE=OFF .*ERROR=2", 5)],
+    "lab6-task-patterns/fsm_periodic": [("m", r"TRANSITIONS=4 CYCLE_MS=11\d\d\d", 16)],
 }
 
 
